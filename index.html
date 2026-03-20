@@ -864,6 +864,13 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
+   PROXY DETECTION
+   localhost:3000 (proxy.js rodando) → usa /proxy para evitar CORS
+   Caso contrário → chama o endpoint SOAP diretamente
+══════════════════════════════════════════════════════════════════ */
+const USE_PROXY = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+/* ═══════════════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════════════════ */
 const State = {
@@ -1049,44 +1056,58 @@ const Engine = {
 
   async executeSingle(profile, numAtendimento, payload, timeoutSec, globalSeq) {
     const startTime = Date.now();
-
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutSec * 1000);
+      let success, statusCode, errorDetail = null, duration;
 
-      const headers = { 'Content-Type': 'text/xml; charset=utf-8' };
-      if (profile.soapAction !== undefined && profile.soapAction !== '')
-        headers['SOAPAction'] = profile.soapAction;
-      if (profile.login && profile.senha)
-        headers['Authorization'] = 'Basic ' + btoa(`${profile.login}:${profile.senha}`);
+      if (USE_PROXY) {
+        // ── Via proxy local (evita CORS) ──────────────────────────
+        const fwdHeaders = { 'Content-Type': 'text/xml; charset=utf-8' };
+        if (profile.soapAction) fwdHeaders['SOAPAction'] = profile.soapAction;
+        if (profile.login && profile.senha)
+          fwdHeaders['Authorization'] = 'Basic ' + btoa(`${profile.login}:${profile.senha}`);
 
-      const res = await fetch(profile.url, {
-        method: 'POST',
-        headers,
-        body: payload,
-        signal: controller.signal,
-      });
+        const proxyRes = await fetch('/proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetUrl: profile.url,
+            headers: fwdHeaders,
+            payload,
+            timeoutMs: timeoutSec * 1000,
+          }),
+        });
+        const data = await proxyRes.json();
+        success     = data.success;
+        statusCode  = data.statusCode;
+        errorDetail = data.errorDetail || null;
+        duration    = data.duration ?? (Date.now() - startTime);
+        if (data.isTimeout) errorDetail = 'TIMEOUT';
 
-      clearTimeout(timer);
-      const duration = Date.now() - startTime;
-      const body = await res.text();
+      } else {
+        // ── Direto (sem proxy) ────────────────────────────────────
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutSec * 1000);
 
-      const hasFault = body.includes('<soap:Fault') ||
-                       body.includes('<faultcode')  ||
-                       body.includes(':Fault>');
+        const headers = { 'Content-Type': 'text/xml; charset=utf-8' };
+        if (profile.soapAction) headers['SOAPAction'] = profile.soapAction;
+        if (profile.login && profile.senha)
+          headers['Authorization'] = 'Basic ' + btoa(`${profile.login}:${profile.senha}`);
 
-      const success = res.ok && !hasFault;
-      let errorDetail = null;
-      if (hasFault) {
-        const m = body.match(/<faultstring[^>]*>([^<]+)<\/faultstring>/i);
-        errorDetail = m ? m[1].trim() : 'SOAP Fault';
-      } else if (!res.ok) {
-        errorDetail = `HTTP ${res.status}`;
+        const res = await fetch(profile.url, { method: 'POST', headers, body: payload, signal: controller.signal });
+        clearTimeout(timer);
+        duration   = Date.now() - startTime;
+        statusCode = res.status;
+        const body = await res.text();
+        const hasFault = body.includes('<soap:Fault') || body.includes('<faultcode') || body.includes(':Fault>');
+        success = res.ok && !hasFault;
+        if (hasFault) {
+          const m = body.match(/<faultstring[^>]*>([^<]+)<\/faultstring>/i);
+          errorDetail = m ? m[1].trim() : 'SOAP Fault';
+        } else if (!res.ok) errorDetail = `HTTP ${res.status}`;
       }
 
       return { seq: globalSeq, endpoint: profile.nome, codigo: profile.codigo,
-               numAtendimento, duration, success, statusCode: res.status,
-               errorDetail, isTimeout: false };
+               numAtendimento, duration, success, statusCode, errorDetail, isTimeout: false };
 
     } catch (err) {
       const duration = Date.now() - startTime;
