@@ -398,10 +398,16 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
       <div class="fg">
         <label class="fl">Payload XML Template <span style="color:var(--err)">*</span></label>
         <textarea class="fi" id="fpayload" placeholder="<soapenv:Envelope...>
+  <CodigoApoiado>{{LOGIN}}</CodigoApoiado>
+  <CodigoSenha>{{SENHA}}</CodigoSenha>
   <NumeroAtendimento>{{NUM_ATENDIMENTO}}</NumeroAtendimento>
 </soapenv:Envelope>"></textarea>
-        <div class="hint">Use <code>{{NUM_ATENDIMENTO}}</code> onde o número deve ser inserido.
-        Será substituído por valores únicos como <code>PRO20260320001</code>.</div>
+        <div class="hint">
+          Placeholders disponíveis:<br>
+          <code>{{NUM_ATENDIMENTO}}</code> → número único por request (ex: <code>PRO20260320001</code>)<br>
+          <code>{{LOGIN}}</code> → valor do campo Login do perfil<br>
+          <code>{{SENHA}}</code> → valor do campo Senha do perfil
+        </div>
       </div>
     </div>
     <div class="mfoot">
@@ -513,7 +519,10 @@ const Engine = {
 
       const {profile}=tasks[i];
       const num=CM.next(profile.codigo);
-      const payload=profile.payloadTemplate.replace(/\{\{NUM_ATENDIMENTO\}\}/g,num);
+      const payload=profile.payloadTemplate
+        .replace(/\{\{NUM_ATENDIMENTO\}\}/g, num)
+        .replace(/\{\{LOGIN\}\}/g,  profile.login  || '')
+        .replace(/\{\{SENHA\}\}/g,   profile.senha  || '');
 
       const p=this.exec(profile,num,payload,cfg.tmo,i+1)
         .then(r=>{ if(!S.abort){S.results.push(r);S.done++;onResult(r);} })
