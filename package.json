@@ -1,0 +1,15 @@
+{
+  "name": "stp-soap",
+  "version": "1.0.0",
+  "description": "Sistema de Teste de Performance SOAP",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
