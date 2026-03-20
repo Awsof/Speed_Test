@@ -7,8 +7,110 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
+/* ════════════════════════════════════════════════════════════════
+   AUTENTICAÇÃO — credenciais validadas no servidor (Vercel)
+   Nunca expostas no código-fonte do HTML
+════════════════════════════════════════════════════════════════ */
+const SESSION_KEY = 'stp_auth';
+
+async function doLogin() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  const btn = document.querySelector('.login-btn');
+  const errEl = document.getElementById('lerr');
+
+  if (!u || !p) { errEl.textContent = 'Preencha usuário e senha.'; return; }
+
+  btn.textContent = 'VERIFICANDO...';
+  btn.disabled = true;
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario: u, senha: p }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      document.getElementById('login-screen').classList.add('hidden');
+    } else {
+      errEl.textContent = 'Usuário ou senha incorretos.';
+      document.getElementById('lp').value = '';
+      document.getElementById('lp').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+  } finally {
+    btn.textContent = 'ENTRAR';
+    btn.disabled = false;
+  }
+}
+
+// Checa sessão ao carregar
+(function checkAuth() {
+  if (!sessionStorage.getItem(SESSION_KEY)) {
+    document.getElementById('login-screen').classList.remove('hidden');
+  } else {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+})();
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+/* ════════════════════════════════════════════════════════════════
+   AUTENTICAÇÃO — credenciais validadas no servidor (Vercel)
+   Nunca expostas no código-fonte do HTML
+════════════════════════════════════════════════════════════════ */
+const SESSION_KEY = 'stp_auth';
+
+async function doLogin() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  const btn = document.querySelector('.login-btn');
+  const errEl = document.getElementById('lerr');
+
+  if (!u || !p) { errEl.textContent = 'Preencha usuário e senha.'; return; }
+
+  btn.textContent = 'VERIFICANDO...';
+  btn.disabled = true;
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario: u, senha: p }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      document.getElementById('login-screen').classList.add('hidden');
+    } else {
+      errEl.textContent = 'Usuário ou senha incorretos.';
+      document.getElementById('lp').value = '';
+      document.getElementById('lp').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+  } finally {
+    btn.textContent = 'ENTRAR';
+    btn.disabled = false;
+  }
+}
+
+// Checa sessão ao carregar
+(function checkAuth() {
+  if (!sessionStorage.getItem(SESSION_KEY)) {
+    document.getElementById('login-screen').classList.remove('hidden');
+  } else {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+})();
+
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -235,9 +337,55 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
            border-radius:3px;color:var(--accent);font-family:var(--mono)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 .fi{animation:fadeIn 180ms ease both}
+
+/* ── Login Screen ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center}
+#login-screen.hidden{display:none}
+.login-box{background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+  padding:40px 36px;width:360px;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.login-logo{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);
+  letter-spacing:.14em;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.login-logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+  box-shadow:var(--accent-g);animation:pulse 2s infinite}
+.login-sub{font-size:11px;color:var(--text3);letter-spacing:.06em;margin-bottom:32px}
+.login-fg{margin-bottom:14px}
+.login-lbl{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;
+  font-weight:500;letter-spacing:.05em}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r);padding:9px 11px;color:var(--text);font-family:var(--mono);
+  font-size:13px;outline:none;transition:border-color var(--t)}
+.login-input:focus{border-color:var(--accent)}
+.login-btn{width:100%;padding:11px;background:var(--accent);color:#000;border:none;
+  border-radius:var(--r);font-family:var(--ui);font-size:13px;font-weight:700;
+  letter-spacing:.1em;cursor:pointer;margin-top:8px;transition:all var(--t)}
+.login-btn:hover{background:var(--accent2);box-shadow:var(--accent-g)}
+.login-err{color:var(--err);font-size:11px;text-align:center;margin-top:10px;
+  min-height:16px;font-family:var(--mono)}
+
 </style>
 </head>
 <body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><div class="login-logo-dot"></div>STP·SOAP</div>
+    <div class="login-sub">Monitor de Performance · Acesso Restrito</div>
+    <div class="login-fg">
+      <label class="login-lbl">Usuário</label>
+      <input type="text" class="login-input" id="lu" autocomplete="username"
+             onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
+    </div>
+    <div class="login-fg">
+      <label class="login-lbl">Senha</label>
+      <input type="password" class="login-input" id="lp" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">ENTRAR</button>
+    <div class="login-err" id="lerr"></div>
+  </div>
+</div>
+
 <div id="app">
 
 <!-- HEADER -->
@@ -492,7 +640,7 @@ const Stats = {
         count:recs.length, errors:errs, successRate:(recs.length-errs)/recs.length*100,
         min:s[0]??0, max:s[s.length-1]??0,
         mean:dur.reduce((a,v)=>a+v,0)/dur.length,
-        p50:this.pct(s,50), p90:this.pct(s,90), p95:this.pct(s,95), p99:this.pct(s,99),
+        p50:this.pct(s,50),
         stddev:this.std(dur),
       };
     }
@@ -623,9 +771,9 @@ function buildCharts(){
   killChart('pc');
   S.charts.pc=new Chart(document.getElementById('cpercentiles').getContext('2d'),{
     type:'bar',
-    data:{labels:['Min','P50','P90','P95','P99','Max'],
+    data:{labels:['Mínimo','Mediana','Máximo'],
           datasets:eps.map((ep,i)=>({label:ep,
-            data:[stats[ep].min,stats[ep].p50,stats[ep].p90,stats[ep].p95,stats[ep].p99,stats[ep].max].map(Math.round),
+            data:[stats[ep].min,stats[ep].p50,stats[ep].max].map(Math.round),
             backgroundColor:COLORS[i%COLORS.length]+'80',borderColor:COLORS[i%COLORS.length],borderWidth:1}))},
     options:{...COPTS,scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>`${v}ms`}}}},
   });
@@ -666,16 +814,16 @@ function doXLSX(){
   const wb=XLSX.utils.book_new();
 
   // Resumo
-  const rh=['Endpoint','Versao','Codigo','Qtd','Erros','Sucesso%',
-            'Min_ms','Max_ms','Media_ms','Mediana_ms','P90_ms','P95_ms','P99_ms','DesvPad_ms'];
+  const rh=['Endpoint','Versao','Codigo','Qtd','Sucesso','Erros','Sucesso%',
+            'Min_ms','Mediana_ms','Max_ms','DesvPad_ms'];
   const rr=Object.entries(stats).map(([ep,s])=>{
     const p=S.profiles.find(x=>x.nome===ep);
-    return [ep,p?.versao||'',p?.codigo||'?',s.count,s.errors,s.successRate.toFixed(1),
-            Math.round(s.min),Math.round(s.max),Math.round(s.mean),Math.round(s.p50),
-            Math.round(s.p90),Math.round(s.p95),Math.round(s.p99),Math.round(s.stddev)];
+    return [ep,p?.versao||'',p?.codigo||'?',s.count,s.count-s.errors,s.errors,
+            s.successRate.toFixed(1),
+            Math.round(s.min),Math.round(s.p50),Math.round(s.max),Math.round(s.stddev)];
   });
   const ws1=XLSX.utils.aoa_to_sheet([rh,...rr]);
-  ws1['!cols']=[20,10,8,6,6,8,9,9,9,10,8,8,8,10].map(w=>({wch:w}));
+  ws1['!cols']=[20,10,8,6,7,6,8,9,10,9,10].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws1,'Resumo');
 
   // Detalhes
@@ -699,12 +847,12 @@ function doCSV(){
     Math.round(r.duration),r.success?'Sim':'Não',r.statusCode||'',r.errorDetail||''].join(',')).join('\n');
   dl('\ufeff'+dh+dr,`STP_Detalhes_${ts}.csv`,'text/csv');
 
-  const sh='Endpoint,Versao,Codigo,Qtd,Erros,Sucesso%,Min_ms,Max_ms,Media_ms,P50_ms,P90_ms,P95_ms,P99_ms,DesvPad_ms\n';
+  const sh='Endpoint,Versao,Codigo,Qtd,Sucesso,Erros,Sucesso%,Min_ms,Mediana_ms,Max_ms,DesvPad_ms\n';
   const sr=Object.entries(stats).map(([ep,s])=>{
     const p=S.profiles.find(x=>x.nome===ep);
-    return [ep,p?.versao||'',p?.codigo||'?',s.count,s.errors,s.successRate.toFixed(1),
-            Math.round(s.min),Math.round(s.max),Math.round(s.mean),Math.round(s.p50),
-            Math.round(s.p90),Math.round(s.p95),Math.round(s.p99),Math.round(s.stddev)].join(',');
+    return [ep,p?.versao||'',p?.codigo||'?',s.count,s.count-s.errors,s.errors,
+            s.successRate.toFixed(1),
+            Math.round(s.min),Math.round(s.p50),Math.round(s.max),Math.round(s.stddev)].join(',');
   }).join('\n');
   dl('\ufeff'+sh+sr,`STP_Resumo_${ts}.csv`,'text/csv');
 }
@@ -842,18 +990,18 @@ function renderResults(){
           <span class="sepname">${esc(ep)}</span>
           <span class="sepmeta">${s.count} req · ${s.successRate.toFixed(0)}% OK</span>
         </div>
-        <div class="smet">
+        <div class="smet" style="grid-template-columns:repeat(4,1fr)">
           <div class="sm"><div class="sml">MÍNIMO</div><div class="smv">${fms(s.min)}</div></div>
-          <div class="sm"><div class="sml">MÉDIA</div><div class="smv">${fms(s.mean)}</div></div>
-          <div class="sm"><div class="sml">P50 MEDIANA</div><div class="smv a">${fms(s.p50)}</div></div>
-          <div class="sm"><div class="sml">P95</div><div class="smv w">${fms(s.p95)}</div></div>
+          <div class="sm"><div class="sml">MEDIANA</div><div class="smv a">${fms(s.p50)}</div></div>
           <div class="sm"><div class="sml">MÁXIMO</div><div class="smv">${fms(s.max)}</div></div>
+          <div class="sm"><div class="sml">DESVIO PADRÃO</div><div class="smv w">${fms(s.stddev)}</div></div>
         </div>
         <table class="stab">
-          <thead><tr><th>MÉTRICA</th><th>P90</th><th>P99</th><th>DESVIO PAD</th><th>ERROS</th></tr></thead>
+          <thead><tr><th>MÉTRICA</th><th>TOTAL REQ</th><th>SUCESSO</th><th>ERROS</th></tr></thead>
           <tbody><tr>
-            <td style="color:var(--text3);font-size:10px">Latência</td>
-            <td>${fms(s.p90)}</td><td>${fms(s.p99)}</td><td>${fms(s.stddev)}</td>
+            <td style="color:var(--text3);font-size:10px">Resultado</td>
+            <td>${s.count}</td>
+            <td class="smv a" style="font-size:13px">${s.count - s.errors}</td>
             <td class="smv ${ec}" style="font-size:13px">${s.errors}</td>
           </tr></tbody>
         </table>
@@ -996,6 +1144,57 @@ if(IS_FILE){
   document.querySelectorAll('.rtab').forEach((e,i)=>{if(i===0)e.classList.add('act');});
   document.getElementById('filebanner').style.display='block';
 }
+
+/* ════════════════════════════════════════════════════════════════
+   AUTENTICAÇÃO — credenciais validadas no servidor (Vercel)
+   Nunca expostas no código-fonte do HTML
+════════════════════════════════════════════════════════════════ */
+const SESSION_KEY = 'stp_auth';
+
+async function doLogin() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  const btn = document.querySelector('.login-btn');
+  const errEl = document.getElementById('lerr');
+
+  if (!u || !p) { errEl.textContent = 'Preencha usuário e senha.'; return; }
+
+  btn.textContent = 'VERIFICANDO...';
+  btn.disabled = true;
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario: u, senha: p }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      document.getElementById('login-screen').classList.add('hidden');
+    } else {
+      errEl.textContent = 'Usuário ou senha incorretos.';
+      document.getElementById('lp').value = '';
+      document.getElementById('lp').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+  } finally {
+    btn.textContent = 'ENTRAR';
+    btn.disabled = false;
+  }
+}
+
+// Checa sessão ao carregar
+(function checkAuth() {
+  if (!sessionStorage.getItem(SESSION_KEY)) {
+    document.getElementById('login-screen').classList.remove('hidden');
+  } else {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+})();
+
 </script>
 </body>
 </html>
