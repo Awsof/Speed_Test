@@ -3,114 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STP·SOAP — Monitor de Performance</title>
+<title>STP·SOAP v2 — Monitor de Performance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
-/* ════════════════════════════════════════════════════════════════
-   AUTENTICAÇÃO — credenciais validadas no servidor (Vercel)
-   Nunca expostas no código-fonte do HTML
-════════════════════════════════════════════════════════════════ */
-const SESSION_KEY = 'stp_auth';
-
-async function doLogin() {
-  const u = document.getElementById('lu').value.trim();
-  const p = document.getElementById('lp').value;
-  const btn = document.querySelector('.login-btn');
-  const errEl = document.getElementById('lerr');
-
-  if (!u || !p) { errEl.textContent = 'Preencha usuário e senha.'; return; }
-
-  btn.textContent = 'VERIFICANDO...';
-  btn.disabled = true;
-  errEl.textContent = '';
-
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario: u, senha: p }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      document.getElementById('login-screen').classList.add('hidden');
-    } else {
-      errEl.textContent = 'Usuário ou senha incorretos.';
-      document.getElementById('lp').value = '';
-      document.getElementById('lp').focus();
-    }
-  } catch(e) {
-    errEl.textContent = 'Erro de conexão. Tente novamente.';
-  } finally {
-    btn.textContent = 'ENTRAR';
-    btn.disabled = false;
-  }
-}
-
-// Checa sessão ao carregar
-(function checkAuth() {
-  if (!sessionStorage.getItem(SESSION_KEY)) {
-    document.getElementById('login-screen').classList.remove('hidden');
-  } else {
-    document.getElementById('login-screen').classList.add('hidden');
-  }
-})();
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-/* ════════════════════════════════════════════════════════════════
-   AUTENTICAÇÃO — credenciais validadas no servidor (Vercel)
-   Nunca expostas no código-fonte do HTML
-════════════════════════════════════════════════════════════════ */
-const SESSION_KEY = 'stp_auth';
-
-async function doLogin() {
-  const u = document.getElementById('lu').value.trim();
-  const p = document.getElementById('lp').value;
-  const btn = document.querySelector('.login-btn');
-  const errEl = document.getElementById('lerr');
-
-  if (!u || !p) { errEl.textContent = 'Preencha usuário e senha.'; return; }
-
-  btn.textContent = 'VERIFICANDO...';
-  btn.disabled = true;
-  errEl.textContent = '';
-
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario: u, senha: p }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      document.getElementById('login-screen').classList.add('hidden');
-    } else {
-      errEl.textContent = 'Usuário ou senha incorretos.';
-      document.getElementById('lp').value = '';
-      document.getElementById('lp').focus();
-    }
-  } catch(e) {
-    errEl.textContent = 'Erro de conexão. Tente novamente.';
-  } finally {
-    btn.textContent = 'ENTRAR';
-    btn.disabled = false;
-  }
-}
-
-// Checa sessão ao carregar
-(function checkAuth() {
-  if (!sessionStorage.getItem(SESSION_KEY)) {
-    document.getElementById('login-screen').classList.remove('hidden');
-  } else {
-    document.getElementById('login-screen').classList.add('hidden');
-  }
-})();
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -129,7 +27,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
 
 /* ── Layout ── */
-#app{display:grid;grid-template-rows:48px 1fr;grid-template-columns:272px 1fr;height:100vh}
+#app{display:grid;grid-template-rows:48px 1fr;grid-template-columns:280px 1fr;height:100vh}
 
 /* ── Header ── */
 #header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);
@@ -140,6 +38,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
           animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .logo-sub{color:var(--text2);font-size:11px;letter-spacing:.07em}
+.logo-ver{color:var(--text3);font-family:var(--mono);font-size:10px;
+          border:1px solid var(--border2);border-radius:3px;padding:1px 6px;margin-left:4px}
 .spacer{flex:1}
 #hbadge{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:var(--r);
         border:1px solid var(--border2);color:var(--text2);letter-spacing:.06em}
@@ -149,32 +49,57 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 /* ── Sidebar ── */
 #sidebar{background:var(--surface);border-right:1px solid var(--border);
          display:flex;flex-direction:column;overflow:hidden}
-.ptitle{padding:13px 14px 9px;font-size:9px;font-weight:700;letter-spacing:.18em;
-        color:var(--text3);border-bottom:1px solid var(--border);text-transform:uppercase}
-#plist{flex:1;overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:5px}
+.ptitle{padding:11px 12px 9px;font-size:9px;font-weight:700;letter-spacing:.18em;
+        color:var(--text3);border-bottom:1px solid var(--border);text-transform:uppercase;
+        display:flex;align-items:center;gap:6px}
+.ptitle-actions{margin-left:auto;display:flex;gap:4px}
+#plist{flex:1;overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:4px}
+
+/* ── Group ── */
+.grp-header{display:flex;align-items:center;gap:6px;padding:5px 7px;
+            border-radius:var(--r);cursor:pointer;transition:background var(--t);
+            user-select:none}
+.grp-header:hover{background:var(--surface2)}
+.grp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.grp-name{font-size:11px;font-weight:600;flex:1}
+.grp-count{font-family:var(--mono);font-size:9px;color:var(--text3);
+           border:1px solid var(--border);border-radius:3px;padding:1px 5px}
+.grp-arrow{font-size:9px;color:var(--text3);transition:transform var(--t)}
+.grp-arrow.open{transform:rotate(90deg)}
+.grp-actions{display:flex;gap:2px;margin-left:4px}
+.grp-run-btn{padding:2px 7px;background:var(--accent-d);border:1px solid var(--accent);
+             border-radius:3px;color:var(--accent);font-family:var(--mono);font-size:9px;
+             cursor:pointer;white-space:nowrap;transition:all var(--t)}
+.grp-run-btn:hover{background:var(--accent);color:#000}
+.grp-body{padding-left:8px;display:flex;flex-direction:column;gap:3px;
+          overflow:hidden;transition:all var(--t)}
+.grp-body.collapsed{display:none}
+
+/* ── Profile card ── */
 .pcard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
-       padding:9px 11px;cursor:pointer;transition:border-color var(--t),background var(--t)}
+       padding:8px 10px;cursor:pointer;transition:border-color var(--t),background var(--t)}
 .pcard:hover{border-color:var(--border2);background:var(--surface3)}
 .pcard.sel{border-color:var(--accent);background:var(--accent-d)}
-.pcard-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.pcard-top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .pchk{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);
       background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--t)}
-.pcard.sel .pchk{background:var(--accent);border-color:var(--accent)}
-.pchk svg{display:none}
-.pcard.sel .pchk svg{display:block}
-.pname{font-weight:600;font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard.sel .pchk{border-color:var(--accent)}
+.pcard.sel .pchk-dot{opacity:1}
+.pchk-dot{width:8px;height:8px;border-radius:2px;opacity:0;transition:opacity var(--t)}
+.pname{font-weight:600;font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcode{font-family:var(--mono);font-size:9px;background:var(--surface3);border:1px solid var(--border2);
-       border-radius:3px;padding:1px 5px;color:var(--accent);flex-shrink:0}
-.pver{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px}
+       border-radius:3px;padding:1px 5px;flex-shrink:0}
+.pver{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:3px}
 .purl{font-family:var(--mono);font-size:9px;color:var(--text3);white-space:nowrap;
-      overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+      overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
 .pacts{display:flex;gap:3px;justify-content:flex-end}
-.bico{width:21px;height:21px;border:1px solid var(--border2);border-radius:4px;background:transparent;
+.bico{width:20px;height:20px;border:1px solid var(--border2);border-radius:4px;background:transparent;
       color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;
-      font-size:11px;transition:all var(--t)}
+      font-size:10px;transition:all var(--t)}
 .bico:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-d)}
 .bico.del:hover{border-color:var(--err);color:var(--err);background:var(--err-d)}
-#sidebar-foot{padding:9px 7px;border-top:1px solid var(--border)}
+#sidebar-foot{padding:8px 7px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px}
+.sf-row{display:flex;gap:5px}
 
 /* ── Main ── */
 #main{display:grid;grid-template-columns:300px 1fr;overflow:hidden}
@@ -182,15 +107,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 /* ── Config panel ── */
 #cfg{background:var(--surface);border-right:1px solid var(--border);
      display:flex;flex-direction:column;overflow-y:auto}
-.csec{padding:14px;border-bottom:1px solid var(--border)}
+.csec{padding:13px;border-bottom:1px solid var(--border)}
 .csec:last-child{border-bottom:none}
 .slbl{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--text3);
-      text-transform:uppercase;margin-bottom:11px}
+      text-transform:uppercase;margin-bottom:10px}
 .chips{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
-.chip{font-family:var(--mono);font-size:10px;background:var(--accent-d);
-      border:1px solid var(--accent);color:var(--accent);padding:2px 7px;border-radius:99px}
+.chip{font-family:var(--mono);font-size:10px;border:1px solid;padding:2px 7px;border-radius:99px}
 .nochip{color:var(--text3);font-size:11px;font-style:italic}
-.fg{margin-bottom:11px}
+.fg{margin-bottom:10px}
 .fl{display:block;font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:500;letter-spacing:.04em}
 .fl span{color:var(--text3);font-family:var(--mono);font-weight:400}
 .fi{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);
@@ -210,26 +134,56 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 .btn-run.stop{background:var(--err);color:#fff}
 .btn-run.stop:hover{background:#cc3333;box-shadow:0 0 24px rgba(239,68,68,.3)}
 
+/* ── Advanced toggle ── */
+.adv-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;
+            color:var(--text3);font-size:10px;user-select:none;margin-bottom:8px}
+.adv-toggle:hover{color:var(--text2)}
+.adv-arrow{font-size:9px;transition:transform var(--t)}
+.adv-arrow.open{transform:rotate(90deg)}
+#adv-fields{display:none}
+#adv-fields.open{display:block}
+
 /* ── Progress ── */
 #progsec{display:none}
 #progsec.vis{display:block}
+
+/* Overall bar */
+.pb-overall{margin-bottom:10px}
 .pbwrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
-        height:7px;overflow:hidden;margin-bottom:7px}
+        height:6px;overflow:hidden;margin-bottom:6px}
 .pbfill{height:100%;background:linear-gradient(90deg,var(--accent),#00c268);
         border-radius:var(--r);transition:width 300ms ease;box-shadow:0 0 8px rgba(0,232,122,.5)}
-.pstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.pstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px}
 .pstat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
        padding:5px 7px;text-align:center}
 .pstatv{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);display:block}
 .pstatl{font-size:9px;color:var(--text3);letter-spacing:.07em}
+
+/* Per-profile progress bars */
+#per-profile-bars{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.ppbar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+       padding:5px 8px}
+.ppbar-top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.ppbar-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ppbar-name{font-size:10px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppbar-stat{font-family:var(--mono);font-size:9px;color:var(--text3)}
+.ppbar-track{background:var(--surface3);border-radius:99px;height:3px;overflow:hidden}
+.ppbar-fill{height:100%;border-radius:99px;transition:width 300ms ease}
+
+/* Log tabs */
+.log-tabs{display:flex;gap:2px;margin-bottom:5px}
+.log-tab{padding:3px 9px;border-radius:3px;border:1px solid transparent;background:transparent;
+         color:var(--text3);font-family:var(--mono);font-size:9px;cursor:pointer;transition:all var(--t)}
+.log-tab.act{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.log-tab:hover:not(.act){color:var(--text2)}
+.log-pane{display:none}
+.log-pane.act{display:block}
 .livelog{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
-         height:110px;overflow-y:auto;padding:5px 7px;font-family:var(--mono);
-         font-size:10px;line-height:1.7;margin-top:7px}
+         height:90px;overflow-y:auto;padding:5px 7px;font-family:var(--mono);
+         font-size:10px;line-height:1.7}
 .le{display:flex;gap:7px}
 .lt{color:var(--text3);flex-shrink:0}
-.lok{color:var(--accent)}
-.lerr{color:var(--err)}
-.linf{color:var(--warn)}
+.lok{color:var(--accent)}.lerr{color:var(--err)}.linf{color:var(--warn)}
 
 /* ── Results ── */
 #res{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
@@ -270,13 +224,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 .sepc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
 .seph{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;
       gap:9px;background:var(--surface2)}
-.sepcode{font-family:var(--mono);font-size:11px;background:var(--accent-d);border:1px solid var(--accent);
-         color:var(--accent);padding:2px 7px;border-radius:3px;font-weight:700}
+.sep-pdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sepcode{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:3px;font-weight:700}
 .sepver{font-family:var(--mono);font-size:10px;background:var(--surface3);border:1px solid var(--border2);
         color:var(--text2);padding:2px 7px;border-radius:3px}
 .sepname{font-size:12px;font-weight:600}
 .sepmeta{font-family:var(--mono);font-size:10px;color:var(--text2);margin-left:auto}
-.smet{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border)}
+.smet{display:grid;gap:1px;background:var(--border)}
 .sm{background:var(--surface);padding:11px 13px}
 .sml{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
 .smv{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text)}
@@ -291,15 +245,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 .stab tr:hover td{background:var(--surface2)}
 
 /* ── Details table ── */
-.dtab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
-.dtab th{padding:7px 13px;text-align:left;font-size:9px;letter-spacing:.12em;color:var(--text3);
+.dtab-wrap{overflow-x:auto}
+.dtab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;min-width:900px}
+.dtab th{padding:7px 11px;text-align:left;font-size:9px;letter-spacing:.12em;color:var(--text3);
          font-weight:600;border-bottom:1px solid var(--border);background:var(--surface);
-         position:sticky;top:0;z-index:1;white-space:nowrap}
-.dtab td{padding:6px 13px;color:var(--text2);border-bottom:1px solid var(--border)}
+         position:sticky;top:0;z-index:1;white-space:nowrap;cursor:pointer;user-select:none}
+.dtab th:hover{color:var(--text2)}
+.dtab th.sorted{color:var(--accent)}
+.dtab th .sort-ico{margin-left:4px;opacity:.5}
+.dtab th.sorted .sort-ico{opacity:1}
+.dtab td{padding:6px 11px;color:var(--text2);border-bottom:1px solid var(--border);white-space:nowrap}
 .dtab tr:hover td{background:var(--surface2)}
 .dok{color:var(--accent)}.derr{color:var(--err)}
 .dh{color:var(--text);font-weight:500}
 .dw{color:var(--warn)}.dc{color:var(--err)}
+
+/* Filter row */
+.dtab-filters{display:flex;gap:6px;padding:8px 13px;background:var(--surface);
+              border-bottom:1px solid var(--border);flex-wrap:wrap}
+.dtab-filter{flex:1;min-width:100px;background:var(--surface2);border:1px solid var(--border2);
+             border-radius:4px;padding:4px 7px;color:var(--text);font-family:var(--mono);
+             font-size:10px;outline:none;transition:border-color var(--t)}
+.dtab-filter:focus{border-color:var(--accent)}
+.dtab-filter::placeholder{color:var(--text3)}
 
 /* ── Charts ── */
 .cgrid{padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -314,13 +282,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-d)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
 .btn.pri:hover{background:var(--accent2);box-shadow:var(--accent-g)}
+.btn.sm{padding:4px 9px;font-size:11px}
+.btn.warn-btn{border-color:var(--warn);color:var(--warn);background:var(--warn-d)}
+.btn.warn-btn:hover{background:var(--warn);color:#000}
 
 /* ── Modal ── */
 .mover{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
        display:none;align-items:center;justify-content:center;z-index:100}
 .mover.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:10px;
-       width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+       width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6)}
 .mhd{padding:15px 19px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
 .mtit{font-size:14px;font-weight:700;flex:1}
 .mcls{width:27px;height:27px;border:1px solid var(--border2);border-radius:5px;background:transparent;
@@ -331,12 +302,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--u
 .mfoot{padding:13px 18px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
 textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
 .hint{font-size:10px;color:var(--text3);line-height:1.5;margin-top:3px}
 .hint code{background:var(--surface3);border:1px solid var(--border2);padding:1px 5px;
            border-radius:3px;color:var(--accent);font-family:var(--mono)}
-@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
-.fi{animation:fadeIn 180ms ease both}
+.color-row{display:flex;align-items:center;gap:8px}
+.color-preview{width:22px;height:22px;border-radius:4px;border:1px solid var(--border2);flex-shrink:0}
 
 /* ── Login Screen ── */
 #login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;
@@ -350,8 +322,7 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
   box-shadow:var(--accent-g);animation:pulse 2s infinite}
 .login-sub{font-size:11px;color:var(--text3);letter-spacing:.06em;margin-bottom:32px}
 .login-fg{margin-bottom:14px}
-.login-lbl{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;
-  font-weight:500;letter-spacing:.05em}
+.login-lbl{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;font-weight:500;letter-spacing:.05em}
 .login-input{width:100%;background:var(--surface2);border:1px solid var(--border2);
   border-radius:var(--r);padding:9px 11px;color:var(--text);font-family:var(--mono);
   font-size:13px;outline:none;transition:border-color var(--t)}
@@ -360,13 +331,13 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
   border-radius:var(--r);font-family:var(--ui);font-size:13px;font-weight:700;
   letter-spacing:.1em;cursor:pointer;margin-top:8px;transition:all var(--t)}
 .login-btn:hover{background:var(--accent2);box-shadow:var(--accent-g)}
-.login-err{color:var(--err);font-size:11px;text-align:center;margin-top:10px;
-  min-height:16px;font-family:var(--mono)}
-
+.login-err{color:var(--err);font-size:11px;text-align:center;margin-top:10px;min-height:16px;font-family:var(--mono)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo"><div class="login-logo-dot"></div>STP·SOAP</div>
@@ -390,7 +361,7 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
 
 <!-- HEADER -->
 <header id="header">
-  <div class="logo"><div class="logo-dot"></div>STP·SOAP</div>
+  <div class="logo"><div class="logo-dot"></div>STP·SOAP<span class="logo-ver">v2.0</span></div>
   <span class="logo-sub">Monitor de Performance · Medicina Diagnóstica</span>
   <div class="spacer"></div>
   <div id="hbadge">AGUARDANDO</div>
@@ -398,11 +369,21 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
 
 <!-- SIDEBAR -->
 <aside id="sidebar">
-  <div class="ptitle">Perfis de Endpoint</div>
+  <div class="ptitle">
+    Perfis &amp; Grupos
+    <div class="ptitle-actions">
+      <button class="bico" title="Importar JSON" onclick="triggerImport()">⬆</button>
+      <button class="bico" title="Exportar JSON" onclick="doExportJSON()">⬇</button>
+    </div>
+  </div>
   <div id="plist"></div>
   <div id="sidebar-foot">
-    <button class="btn" style="width:100%" onclick="openModal()">+ Novo Perfil</button>
+    <div class="sf-row">
+      <button class="btn sm" style="flex:1" onclick="openGroupModal()">+ Grupo</button>
+      <button class="btn sm pri" style="flex:1" onclick="openModal()">+ Perfil</button>
+    </div>
   </div>
+  <input type="file" id="import-file" accept=".json" style="display:none" onchange="doImportJSON(this)">
 </aside>
 
 <!-- MAIN -->
@@ -422,15 +403,22 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
       </div>
       <div class="fg">
         <label class="fl">Concorrência simultânea <span id="lcon">3</span></label>
-        <input type="range" class="fi" id="cfg-con" min="1" max="10" value="3" oninput="syncUI()">
-      </div>
-      <div class="fg">
-        <label class="fl">Ramp-up <span id="lrmp">0s (sem ramp-up)</span></label>
-        <input type="range" class="fi" id="cfg-rmp" min="0" max="30" value="0" oninput="syncUI()">
+        <input type="range" class="fi" id="cfg-con" min="1" max="20" value="3" oninput="syncUI()">
       </div>
       <div class="fg">
         <label class="fl">Timeout por request (s)</label>
         <input type="number" class="fi" id="cfg-tmo" min="5" max="300" value="120">
+      </div>
+      <!-- RAMP-UP: oculto por padrão, opcional -->
+      <div class="adv-toggle" onclick="toggleAdv()">
+        <span class="adv-arrow" id="adv-arrow">▶</span>
+        <span>Avançado (Ramp-up)</span>
+      </div>
+      <div id="adv-fields">
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Ramp-up <span id="lrmp">0s (desativado)</span></label>
+          <input type="range" class="fi" id="cfg-rmp" min="0" max="30" value="0" oninput="syncUI()">
+        </div>
       </div>
     </div>
     <div class="csec">
@@ -442,13 +430,25 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
     </div>
     <div class="csec" id="progsec">
       <div class="slbl">Execução em Tempo Real</div>
-      <div class="pbwrap"><div class="pbfill" id="pbfill" style="width:0%"></div></div>
-      <div class="pstats">
-        <div class="pstat"><span class="pstatv" id="pdone">0</span><span class="pstatl">CONCLUÍDAS</span></div>
-        <div class="pstat"><span class="pstatv" id="pok" style="color:var(--accent)">0</span><span class="pstatl">SUCESSO</span></div>
-        <div class="pstat"><span class="pstatv" id="perr" style="color:var(--err)">0</span><span class="pstatl">ERRO</span></div>
+
+      <!-- Overall -->
+      <div class="pb-overall">
+        <div class="pbwrap"><div class="pbfill" id="pbfill" style="width:0%"></div></div>
+        <div class="pstats">
+          <div class="pstat"><span class="pstatv" id="pdone">0</span><span class="pstatl">CONCLUÍDAS</span></div>
+          <div class="pstat"><span class="pstatv" id="pok" style="color:var(--accent)">0</span><span class="pstatl">SUCESSO</span></div>
+          <div class="pstat"><span class="pstatv" id="perr" style="color:var(--err)">0</span><span class="pstatl">ERRO</span></div>
+        </div>
       </div>
-      <div class="livelog" id="livelog"></div>
+
+      <!-- Per-profile bars -->
+      <div id="per-profile-bars"></div>
+
+      <!-- Log tabs -->
+      <div class="log-tabs" id="log-tabs">
+        <button class="log-tab act" data-log="__all__" onclick="switchLog('__all__',this)">Geral</button>
+      </div>
+      <div class="log-pane act" id="log-__all__"><div class="livelog" id="livelog-__all__"></div></div>
     </div>
   </div>
 
@@ -469,23 +469,39 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
       <div id="empty"><div class="eico">◎</div><div class="etxt">Execute um teste para ver os resultados</div></div>
 
       <div class="tpane" id="tab-summary">
-        <div id="filebanner">
-          <b>⚠ Arquivo aberto localmente (file://)</b><br>
+        <div id="filebanner" style="margin:16px 20px;background:rgba(245,158,11,.1);border:1px solid var(--warn);border-radius:var(--r);padding:12px 14px;font-size:11px;line-height:1.7;color:var(--text2);display:none">
+          <b style="color:var(--warn)">⚠ Arquivo aberto localmente (file://)</b><br>
           Para enviar requisições SOAP, acesse via servidor:<br>
-          <code>node proxy.js</code> → abrir <code>http://localhost:3000</code><br>
-          Ou hospede no <b>Vercel / GitHub Pages + proxy</b>.
+          <code style="background:var(--surface3);padding:1px 5px;border-radius:3px;font-family:var(--mono);color:var(--accent);font-size:10px">node proxy.js</code> → abrir
+          <code style="background:var(--surface3);padding:1px 5px;border-radius:3px;font-family:var(--mono);color:var(--accent);font-size:10px">http://localhost:3000</code>
         </div>
         <div class="sgrid" id="sgrid"></div>
       </div>
 
       <div class="tpane" id="tab-details">
-        <table class="dtab" id="dtab">
-          <thead><tr>
-            <th>#</th><th>Endpoint</th><th>Versão</th><th>NumAtendimento</th>
-            <th>Duração (ms)</th><th>Status</th><th>HTTP</th><th>Detalhe</th>
-          </tr></thead>
-          <tbody id="dtbody"></tbody>
-        </table>
+        <div class="dtab-filters" id="dtab-filters">
+          <input class="dtab-filter" id="f-ep"   placeholder="Endpoint…"        oninput="filterDetails()">
+          <input class="dtab-filter" id="f-ver"  placeholder="Versão…"          oninput="filterDetails()">
+          <input class="dtab-filter" id="f-num"  placeholder="NumAtendimento…"  oninput="filterDetails()">
+          <input class="dtab-filter" id="f-numdb" placeholder="NumDB…"          oninput="filterDetails()">
+          <input class="dtab-filter" id="f-dt"   placeholder="Data/Hora…"       oninput="filterDetails()">
+          <input class="dtab-filter" id="f-st"   placeholder="Status OK/ERRO…"  oninput="filterDetails()">
+        </div>
+        <div class="dtab-wrap">
+          <table class="dtab" id="dtab">
+            <thead><tr>
+              <th onclick="sortDetails('seq')">#<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('endpoint')">Endpoint<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('versao')">Versão<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('numAtendimento')">NumAtendimento<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('numAtendimentoDB')">NumAtendimentoDB<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('timestamp')">Data/Hora<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('duration')">Duração (ms)<span class="sort-ico">↕</span></th>
+              <th onclick="sortDetails('success')">Status<span class="sort-ico">↕</span></th>
+            </tr></thead>
+            <tbody id="dtbody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="tpane" id="tab-charts">
@@ -501,7 +517,7 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
 </main>
 </div>
 
-<!-- MODAL -->
+<!-- MODAL: Perfil -->
 <div class="mover" id="modal">
   <div class="modal">
     <div class="mhd">
@@ -514,24 +530,48 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
         <label class="fl">Nome do Perfil</label>
         <input type="text" class="fi" id="fnome" placeholder="Ex: Produção HAPVIDA">
       </div>
-      <div class="g3">
+      <div class="g4">
         <div class="fg">
           <label class="fl">Código <span style="color:var(--err)">*</span></label>
           <input type="text" class="fi" id="fcodigo" placeholder="PRO" maxlength="6">
-          <div class="hint">2–6 chars, sem espaços</div>
         </div>
         <div class="fg">
-          <label class="fl">Versão do Endpoint</label>
-          <input type="text" class="fi" id="fversao" placeholder="v2, 1.3...">
+          <label class="fl">Versão</label>
+          <input type="text" class="fi" id="fversao" placeholder="v2">
         </div>
-        <div class="fg">
-          <label class="fl">SOAPAction</label>
-          <input type="text" class="fi" id="fsoapaction" placeholder='opcional'>
+        <div class="fg" style="grid-column:span 2">
+          <label class="fl">Grupo</label>
+          <select class="fi" id="fgrupo" style="cursor:pointer">
+            <option value="">— sem grupo —</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Cor do Perfil</label>
+        <div class="color-row">
+          <div class="color-preview" id="color-preview" style="background:#00e87a"></div>
+          <input type="color" class="fi" id="fcolor" value="#00e87a"
+                 style="width:60px;height:32px;padding:2px;cursor:pointer"
+                 oninput="document.getElementById('color-preview').style.background=this.value">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <!-- Paleta rápida -->
+            <div id="color-palette"></div>
+          </div>
         </div>
       </div>
       <div class="fg">
         <label class="fl">URL do WebService <span style="color:var(--err)">*</span></label>
         <input type="text" class="fi" id="furl" placeholder="https://servidor.com/ws">
+      </div>
+      <div class="g2">
+        <div class="fg">
+          <label class="fl">SOAPAction</label>
+          <input type="text" class="fi" id="fsoapaction" placeholder="opcional">
+        </div>
+        <div class="fg">
+          <label class="fl">Método SOAP</label>
+          <input type="text" class="fi" id="fmethod" placeholder="RecebeAtendimento">
+        </div>
       </div>
       <div class="g2">
         <div class="fg">
@@ -544,6 +584,13 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
         </div>
       </div>
       <div class="fg">
+        <label class="fl">Tag XML para NumAtendimentoDB <span style="color:var(--text3)">(extração da resposta)</span></label>
+        <input type="text" class="fi" id="fxmltag"
+               placeholder="diag:NumeroAtendimentoApoiado"
+               value="diag:NumeroAtendimentoApoiado">
+        <div class="hint">Tag do XML de resposta para extrair o número de atendimento do sistema destino.</div>
+      </div>
+      <div class="fg">
         <label class="fl">Payload XML Template <span style="color:var(--err)">*</span></label>
         <textarea class="fi" id="fpayload" placeholder="<soapenv:Envelope...>
   <CodigoApoiado>{{LOGIN}}</CodigoApoiado>
@@ -551,10 +598,7 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
   <NumeroAtendimento>{{NUM_ATENDIMENTO}}</NumeroAtendimento>
 </soapenv:Envelope>"></textarea>
         <div class="hint">
-          Placeholders disponíveis:<br>
-          <code>{{NUM_ATENDIMENTO}}</code> → número único por request (ex: <code>PRO20260320001</code>)<br>
-          <code>{{LOGIN}}</code> → valor do campo Login do perfil<br>
-          <code>{{SENHA}}</code> → valor do campo Senha do perfil
+          Placeholders: <code>{{NUM_ATENDIMENTO}}</code> <code>{{LOGIN}}</code> <code>{{SENHA}}</code>
         </div>
       </div>
     </div>
@@ -565,20 +609,116 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
   </div>
 </div>
 
+<!-- MODAL: Grupo -->
+<div class="mover" id="grp-modal">
+  <div class="modal" style="width:420px">
+    <div class="mhd">
+      <span class="mtit" id="grp-mtit">Novo Grupo</span>
+      <button class="mcls" onclick="closeGroupModal()">✕</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="gid">
+      <div class="fg">
+        <label class="fl">Nome do Grupo</label>
+        <input type="text" class="fi" id="gnome" placeholder="Ex: Produção">
+      </div>
+      <div class="fg">
+        <label class="fl">Cor do Grupo</label>
+        <div class="color-row">
+          <div class="color-preview" id="gcolor-preview" style="background:#00e87a"></div>
+          <input type="color" class="fi" id="gcolor" value="#00e87a"
+                 style="width:60px;height:32px;padding:2px;cursor:pointer"
+                 oninput="document.getElementById('gcolor-preview').style.background=this.value">
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeGroupModal()">Cancelar</button>
+      <button class="btn pri" onclick="saveGroup()">Salvar Grupo</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════════════════════════
    AMBIENTE
 ════════════════════════════════════════════════════════════════ */
-const IS_FILE    = location.protocol === 'file:';
-const IS_LOCAL   = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const PROXY_URL  = IS_LOCAL ? '/proxy' : '/api/proxy';
-const USE_PROXY  = !IS_FILE; // file:// não tem como usar proxy
+const IS_FILE   = location.protocol === 'file:';
+const IS_LOCAL  = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const PROXY_URL = IS_LOCAL ? '/proxy' : '/api/proxy';
+const USE_PROXY = !IS_FILE;
+
+/* ════════════════════════════════════════════════════════════════
+   PALETA DE CORES
+════════════════════════════════════════════════════════════════ */
+const PALETTE = [
+  '#00e87a','#38bdf8','#f59e0b','#a78bfa','#fb7185',
+  '#34d399','#f472b6','#60a5fa','#fbbf24','#e879f9',
+];
+let paletteIdx = 0;
+function nextColor(){ return PALETTE[paletteIdx++ % PALETTE.length]; }
+
+(function buildPalette(){
+  const el = document.getElementById('color-palette');
+  el.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap';
+  PALETTE.forEach(c => {
+    const b = document.createElement('div');
+    b.style.cssText = `width:18px;height:18px;border-radius:3px;background:${c};cursor:pointer;border:1px solid rgba(255,255,255,.1)`;
+    b.title = c;
+    b.onclick = () => {
+      document.getElementById('fcolor').value = c;
+      document.getElementById('color-preview').style.background = c;
+    };
+    el.appendChild(b);
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   AUTH
+════════════════════════════════════════════════════════════════ */
+const SESSION_KEY = 'stp_auth';
+
+async function doLogin(){
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  const btn = document.querySelector('.login-btn');
+  const errEl = document.getElementById('lerr');
+  if(!u || !p){ errEl.textContent='Preencha usuário e senha.'; return; }
+  btn.textContent='VERIFICANDO...'; btn.disabled=true; errEl.textContent='';
+  try{
+    const res = await fetch('/api/login',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({usuario:u,senha:p}),
+    });
+    const data = await res.json();
+    if(data.ok){
+      sessionStorage.setItem(SESSION_KEY,'1');
+      document.getElementById('login-screen').classList.add('hidden');
+    } else {
+      errEl.textContent='Usuário ou senha incorretos.';
+      document.getElementById('lp').value='';
+      document.getElementById('lp').focus();
+    }
+  } catch(e){
+    errEl.textContent='Erro de conexão. Tente novamente.';
+  } finally {
+    btn.textContent='ENTRAR'; btn.disabled=false;
+  }
+}
+(function checkAuth(){
+  if(!sessionStorage.getItem(SESSION_KEY)){
+    document.getElementById('login-screen').classList.remove('hidden');
+  } else {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+})();
 
 /* ════════════════════════════════════════════════════════════════
    STATE
 ════════════════════════════════════════════════════════════════ */
 const S = {
   profiles: [],
+  groups:   [],
   selected: new Set(),
   results:  [],
   running:  false,
@@ -586,20 +726,113 @@ const S = {
   total:    0,
   done:     0,
   charts:   {},
+  sortCol:  'seq',
+  sortAsc:  true,
 };
 
 /* ════════════════════════════════════════════════════════════════
-   PROFILES  (localStorage)
+   STORAGE: GROUPS
+════════════════════════════════════════════════════════════════ */
+const GM = {
+  KEY: 'stp_groups_v2',
+  load(){ try{ S.groups=JSON.parse(localStorage.getItem(this.KEY)||'[]'); } catch{ S.groups=[]; } },
+  save(){ localStorage.setItem(this.KEY, JSON.stringify(S.groups)); },
+  add(g){  g.id=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'g'); S.groups.push(g); this.save(); },
+  update(g){ const i=S.groups.findIndex(x=>x.id===g.id); if(i>=0){S.groups[i]=g;this.save();} },
+  del(id){ S.groups=S.groups.filter(g=>g.id!==id); S.profiles.forEach(p=>{if(p.groupId===id)p.groupId=null;}); PM.save(); this.save(); },
+  get(id){ return S.groups.find(g=>g.id===id); },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   STORAGE: PROFILES
 ════════════════════════════════════════════════════════════════ */
 const PM = {
   KEY: 'stp_profiles_v2',
-  load() { try { S.profiles = JSON.parse(localStorage.getItem(this.KEY)||'[]'); } catch{ S.profiles=[]; } },
-  save() { localStorage.setItem(this.KEY, JSON.stringify(S.profiles)); },
-  add(p)    { p.id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)); S.profiles.push(p); this.save(); },
-  update(p) { const i=S.profiles.findIndex(x=>x.id===p.id); if(i>=0){S.profiles[i]=p;this.save();} },
-  del(id)   { S.profiles=S.profiles.filter(p=>p.id!==id); S.selected.delete(id); this.save(); },
-  get(id)   { return S.profiles.find(p=>p.id===id); },
+  load(){ try{ S.profiles=JSON.parse(localStorage.getItem(this.KEY)||'[]'); } catch{ S.profiles=[]; } },
+  save(){ localStorage.setItem(this.KEY, JSON.stringify(S.profiles)); },
+  add(p){  p.id=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)); S.profiles.push(p); this.save(); },
+  update(p){ const i=S.profiles.findIndex(x=>x.id===p.id); if(i>=0){S.profiles[i]=p;this.save();} },
+  del(id){ S.profiles=S.profiles.filter(p=>p.id!==id); S.selected.delete(id); this.save(); },
+  get(id){ return S.profiles.find(p=>p.id===id); },
 };
+
+/* ════════════════════════════════════════════════════════════════
+   IMPORT / EXPORT JSON
+════════════════════════════════════════════════════════════════ */
+function triggerImport(){ document.getElementById('import-file').click(); }
+
+function doImportJSON(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      // Valida esquema mínimo
+      if(!data.profiles || !Array.isArray(data.profiles)) throw new Error('Campo "profiles" ausente ou inválido.');
+      // Importa grupos (sem duplicar por nome)
+      if(Array.isArray(data.groups)){
+        data.groups.forEach(g => {
+          if(!g.nome) return;
+          const exists = S.groups.find(x=>x.nome===g.nome);
+          if(!exists){ GM.add({...g, id: undefined}); }
+        });
+      }
+      // Importa perfis (sem duplicar por codigo+url)
+      let added=0;
+      data.profiles.forEach(p => {
+        if(!p.nome||!p.codigo||!p.url||!p.payloadTemplate) return;
+        const exists = S.profiles.find(x=>x.codigo===p.codigo&&x.url===p.url);
+        if(!exists){
+          // Resolve groupId pelo nome (já que IDs diferem entre máquinas)
+          if(p._groupName){
+            const grp = S.groups.find(x=>x.nome===p._groupName);
+            p.groupId = grp ? grp.id : null;
+          }
+          delete p._groupName;
+          p.senha = ''; // segurança: não importar senhas
+          PM.add({...p, id: undefined});
+          added++;
+        }
+      });
+      alert(`Importação concluída: ${added} perfil(s) adicionado(s).`);
+      renderAll();
+    } catch(err){
+      alert('Erro ao importar: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function doExportJSON(){
+  if(!S.profiles.length){ alert('Nenhum perfil para exportar.'); return; }
+  const data = {
+    version: '2.0',
+    exportedAt: new Date().toISOString(),
+    groups: S.groups.map(({id,nome,color})=>({id,nome,color})),
+    profiles: S.profiles.map(p => {
+      const grp = p.groupId ? GM.get(p.groupId) : null;
+      return {
+        nome:            p.nome,
+        codigo:          p.codigo,
+        versao:          p.versao||'',
+        color:           p.color||'#00e87a',
+        url:             p.url,
+        login:           p.login||'',
+        senha:           '',        // segurança: não exportar senhas
+        soapAction:      p.soapAction||'',
+        method:          p.method||'',
+        xmlTag:          p.xmlTag||'diag:NumeroAtendimentoApoiado',
+        payloadTemplate: p.payloadTemplate,
+        groupId:         p.groupId||null,
+        _groupName:      grp ? grp.nome : null, // para resolução no import
+      };
+    }),
+  };
+  const json = JSON.stringify(data, null, 2);
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  dl(json, `STP_SOAP_Perfis_${ts}.json`, 'application/json');
+}
 
 /* ════════════════════════════════════════════════════════════════
    COUNTER  {CODIGO}{YYYYMMDD}{SEQ:003}
@@ -610,28 +843,50 @@ const CM = {
   peek(c){ return parseInt(localStorage.getItem(this.key(c))||'0',10); },
   next(c){
     const k=this.key(c), n=parseInt(localStorage.getItem(k)||'0',10)+1;
-    localStorage.setItem(k,String(n));
+    localStorage.setItem(k, String(n));
     return `${c.toUpperCase()}${this.today()}${String(n).padStart(3,'0')}`;
   },
 };
 
 /* ════════════════════════════════════════════════════════════════
+   XML EXTRACTION
+════════════════════════════════════════════════════════════════ */
+function extractXmlTag(xml, tag){
+  if(!xml || !tag) return null;
+  try{
+    // Tenta via DOMParser primeiro (mais robusto)
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    // tag pode ser "diag:NumeroAtendimentoApoiado" — localName é a parte após ":"
+    const localName = tag.includes(':') ? tag.split(':')[1] : tag;
+    const nodes = doc.getElementsByTagNameNS('*', localName);
+    if(nodes.length > 0) return nodes[0].textContent.trim() || null;
+    // Fallback: regex
+    const re = new RegExp(`<${tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^>]*>([^<]+)<\/${tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}>`, 'i');
+    const m = xml.match(re);
+    return m ? m[1].trim() : null;
+  } catch{
+    return null;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
    STATISTICS
 ════════════════════════════════════════════════════════════════ */
 const Stats = {
-  pct(sorted,p){
-    if(!sorted.length)return 0;
+  pct(sorted, p){
+    if(!sorted.length) return 0;
     const i=(p/100)*(sorted.length-1), lo=Math.floor(i), hi=Math.ceil(i);
     return lo===hi ? sorted[lo] : sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo);
   },
   std(vals){
-    if(!vals.length)return 0;
+    if(!vals.length) return 0;
     const m=vals.reduce((s,v)=>s+v,0)/vals.length;
     return Math.sqrt(vals.reduce((s,v)=>s+(v-m)**2,0)/vals.length);
   },
   calc(results){
     const by={};
-    results.forEach(r=>{ if(!by[r.endpoint])by[r.endpoint]=[]; by[r.endpoint].push(r); });
+    results.forEach(r=>{ if(!by[r.endpoint]) by[r.endpoint]=[]; by[r.endpoint].push(r); });
     const out={};
     for(const [ep,recs] of Object.entries(by)){
       const dur=recs.map(r=>r.duration), s=[...dur].sort((a,b)=>a-b);
@@ -640,8 +895,7 @@ const Stats = {
         count:recs.length, errors:errs, successRate:(recs.length-errs)/recs.length*100,
         min:s[0]??0, max:s[s.length-1]??0,
         mean:dur.reduce((a,v)=>a+v,0)/dur.length,
-        p50:this.pct(s,50),
-        stddev:this.std(dur),
+        p50:this.pct(s,50), stddev:this.std(dur),
       };
     }
     return out;
@@ -652,119 +906,160 @@ const Stats = {
    ENGINE
 ════════════════════════════════════════════════════════════════ */
 const Engine = {
+  // Contadores por perfil para progresso granular
+  _perProfile: {},
+
+  initPerProfile(profiles, reqCount){
+    this._perProfile = {};
+    profiles.forEach(p => {
+      this._perProfile[p.id] = { total: reqCount, done: 0, ok: 0 };
+    });
+  },
+
   async run(profiles, cfg){
-    const tasks=[];
-    profiles.forEach(p=>{ for(let i=0;i<cfg.req;i++) tasks.push({profile:p}); });
+    const tasks = [];
+    profiles.forEach(p => { for(let i=0;i<cfg.req;i++) tasks.push({profile:p}); });
     S.total=tasks.length; S.done=0; S.results=[]; S.abort=false;
+    this.initPerProfile(profiles, cfg.req);
+    renderPerProfileBars(profiles);
 
-    const active=new Set();
-    for(let i=0;i<tasks.length;i++){
+    const active = new Set();
+    for(let i=0; i<tasks.length; i++){
       if(S.abort) break;
-      if(cfg.ramp>0 && i>0) await sleep(cfg.ramp*1000/tasks.length);
+      // Ramp-up (opcional, padrão 0)
+      if(cfg.ramp > 0 && i > 0) await sleep(cfg.ramp*1000/tasks.length);
       if(S.abort) break;
-      while(active.size>=cfg.con && !S.abort) await Promise.race(active);
+      while(active.size >= cfg.con && !S.abort) await Promise.race(active);
       if(S.abort) break;
 
-      const {profile}=tasks[i];
-      const num=CM.next(profile.codigo);
-      const payload=profile.payloadTemplate
+      const {profile} = tasks[i];
+      const num = CM.next(profile.codigo);
+      const payload = profile.payloadTemplate
         .replace(/\{\{NUM_ATENDIMENTO\}\}/g, num)
         .replace(/\{\{LOGIN\}\}/g,  profile.login  || '')
-        .replace(/\{\{SENHA\}\}/g,   profile.senha  || '');
+        .replace(/\{\{SENHA\}\}/g,  profile.senha  || '');
 
-      const p=this.exec(profile,num,payload,cfg.tmo,i+1)
-        .then(r=>{ if(!S.abort){S.results.push(r);S.done++;onResult(r);} })
-        .catch(e=>console.error(e))
-        .finally(()=>active.delete(p));
+      const p = this.exec(profile, num, payload, cfg.tmo, i+1)
+        .then(r => {
+          if(!S.abort){
+            S.results.push(r);
+            S.done++;
+            const pp = this._perProfile[profile.id];
+            if(pp){ pp.done++; if(r.success) pp.ok++; }
+            onResult(r, profile.id);
+          }
+        })
+        .catch(e => console.error(e))
+        .finally(() => active.delete(p));
       active.add(p);
     }
     await Promise.allSettled([...active]);
   },
 
   async exec(profile, num, payload, tmo, seq){
-    const t0=Date.now();
+    const t0 = Date.now();
     try{
-      if(IS_FILE){
-        // Aberto como file:// — tenta direto (vai falhar por CORS mas registra o erro real)
-        return await this.direct(profile,num,payload,tmo,seq);
-      }
-      if(USE_PROXY){
-        return await this.viaProxy(profile,num,payload,tmo,seq);
-      }
-      return await this.direct(profile,num,payload,tmo,seq);
-    }catch(e){
-      return {seq,endpoint:profile.nome,versao:profile.versao||'',codigo:profile.codigo,
-              numAtendimento:num,duration:Date.now()-t0,success:false,
-              errorDetail:e.message,isTimeout:false};
+      if(IS_FILE) return await this.direct(profile, num, payload, tmo, seq);
+      if(USE_PROXY) return await this.viaProxy(profile, num, payload, tmo, seq);
+      return await this.direct(profile, num, payload, tmo, seq);
+    } catch(e){
+      return {
+        seq, endpoint:profile.nome, versao:profile.versao||'',
+        codigo:profile.codigo, color:profile.color||'#00e87a',
+        numAtendimento:num, numAtendimentoDB:null,
+        duration:Date.now()-t0, success:false,
+        errorDetail:e.message, isTimeout:false,
+        timestamp:new Date().toISOString(),
+      };
     }
   },
 
-  async viaProxy(profile,num,payload,tmo,seq){
-    const t0=Date.now();
-    const hdrs={'Content-Type':'text/xml; charset=utf-8'};
-    if(profile.soapAction) hdrs['SOAPAction']=profile.soapAction;
-    if(profile.login&&profile.senha) hdrs['Authorization']='Basic '+btoa(`${profile.login}:${profile.senha}`);
+  async viaProxy(profile, num, payload, tmo, seq){
+    const t0 = Date.now();
+    const hdrs = {'Content-Type':'text/xml; charset=utf-8'};
+    if(profile.soapAction) hdrs['SOAPAction'] = profile.soapAction;
 
-    const r=await fetch(PROXY_URL,{
+    const r = await fetch(PROXY_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({targetUrl:profile.url,headers:hdrs,payload,timeoutMs:tmo*1000}),
+      body:JSON.stringify({targetUrl:profile.url, headers:hdrs, payload, timeoutMs:tmo*1000}),
     });
     if(!r.ok) throw new Error(`Proxy HTTP ${r.status}`);
-    const d=await r.json();
-    return {seq,endpoint:profile.nome,versao:profile.versao||'',codigo:profile.codigo,
-            numAtendimento:num,duration:d.duration??(Date.now()-t0),
-            success:d.success,statusCode:d.statusCode,
-            errorDetail:d.errorDetail||null,isTimeout:d.isTimeout||false};
+    const d = await r.json();
+
+    const numDB = extractXmlTag(d.responseBody, profile.xmlTag||'diag:NumeroAtendimentoApoiado');
+    return {
+      seq, endpoint:profile.nome, versao:profile.versao||'',
+      codigo:profile.codigo, color:profile.color||'#00e87a',
+      numAtendimento:num, numAtendimentoDB:numDB,
+      duration:d.duration??(Date.now()-t0),
+      success:d.success, statusCode:d.statusCode,
+      errorDetail:d.errorDetail||null, isTimeout:d.isTimeout||false,
+      timestamp:new Date().toISOString(),
+    };
   },
 
-  async direct(profile,num,payload,tmo,seq){
-    const t0=Date.now();
-    const ctrl=new AbortController();
-    const timer=setTimeout(()=>ctrl.abort(),tmo*1000);
-    const hdrs={'Content-Type':'text/xml; charset=utf-8'};
-    if(profile.soapAction) hdrs['SOAPAction']=profile.soapAction;
-    if(profile.login&&profile.senha) hdrs['Authorization']='Basic '+btoa(`${profile.login}:${profile.senha}`);
+  async direct(profile, num, payload, tmo, seq){
+    const t0 = Date.now();
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), tmo*1000);
+    const hdrs = {'Content-Type':'text/xml; charset=utf-8'};
+    if(profile.soapAction) hdrs['SOAPAction'] = profile.soapAction;
 
-    const r=await fetch(profile.url,{method:'POST',headers:hdrs,body:payload,signal:ctrl.signal});
+    const r = await fetch(profile.url, {method:'POST', headers:hdrs, body:payload, signal:ctrl.signal});
     clearTimeout(timer);
-    const dur=Date.now()-t0, body=await r.text();
-    const fault=body.includes('<soap:Fault')||body.includes('<faultcode')||body.includes(':Fault>');
-    const ok=r.ok&&!fault;
-    let err=null;
-    if(fault){const m=body.match(/<faultstring[^>]*>([^<]+)<\/faultstring>/i);err=m?m[1].trim():'SOAP Fault';}
+    const dur = Date.now()-t0, body = await r.text();
+    const fault = body.includes('<soap:Fault')||body.includes('<faultcode')||body.includes(':Fault>');
+    const ok = r.ok && !fault;
+    let err = null;
+    if(fault){ const m=body.match(/<faultstring[^>]*>([^<]+)<\/faultstring>/i); err=m?m[1].trim():'SOAP Fault'; }
     else if(!r.ok) err=`HTTP ${r.status}`;
-    return {seq,endpoint:profile.nome,versao:profile.versao||'',codigo:profile.codigo,
-            numAtendimento:num,duration:dur,success:ok,statusCode:r.status,errorDetail:err,isTimeout:false};
+    const numDB = extractXmlTag(body, profile.xmlTag||'diag:NumeroAtendimentoApoiado');
+    return {
+      seq, endpoint:profile.nome, versao:profile.versao||'',
+      codigo:profile.codigo, color:profile.color||'#00e87a',
+      numAtendimento:num, numAtendimentoDB:numDB,
+      duration:dur, success:ok, statusCode:r.status,
+      errorDetail:err, isTimeout:false,
+      timestamp:new Date().toISOString(),
+    };
   },
 };
 
 /* ════════════════════════════════════════════════════════════════
    CHARTS
 ════════════════════════════════════════════════════════════════ */
-const COLORS=['#00e87a','#38bdf8','#f59e0b','#a78bfa','#fb7185','#34d399','#60a5fa'];
 const COPTS={responsive:true,maintainAspectRatio:false,
              plugins:{legend:{labels:{color:'#7a8db3',font:{family:"'JetBrains Mono',monospace",size:10},padding:8,boxWidth:10}}},
              scales:{x:{ticks:{color:'#7a8db3',font:{family:"'JetBrains Mono',monospace",size:9}},grid:{color:'#1a2035'}},
                      y:{ticks:{color:'#7a8db3',font:{family:"'JetBrains Mono',monospace",size:9}},grid:{color:'#1a2035'}}}};
 
-function killChart(id){if(S.charts[id]){S.charts[id].destroy();delete S.charts[id];}}
+function killChart(id){ if(S.charts[id]){ S.charts[id].destroy(); delete S.charts[id]; } }
 
 function buildCharts(){
   const res=S.results, stats=Stats.calc(res), eps=Object.keys(stats);
 
+  // Mapeia cor por endpoint (usa a cor do perfil correspondente)
+  const epColor = (ep) => {
+    const p = S.profiles.find(x=>x.nome===ep);
+    return p?.color || '#00e87a';
+  };
+
   // Timeline
   killChart('tl');
   const byEp={};
-  res.forEach(r=>{if(!byEp[r.endpoint])byEp[r.endpoint]=[];byEp[r.endpoint].push(r.duration);});
+  res.forEach(r=>{ if(!byEp[r.endpoint]) byEp[r.endpoint]=[]; byEp[r.endpoint].push(r.duration); });
   const maxLen=Math.max(...Object.values(byEp).map(a=>a.length));
   S.charts.tl=new Chart(document.getElementById('ctimeline').getContext('2d'),{
     type:'line',
     data:{labels:[...Array(maxLen)].map((_,i)=>`#${i+1}`),
-          datasets:eps.map((ep,i)=>({label:ep,data:byEp[ep],borderColor:COLORS[i%COLORS.length],
-            backgroundColor:'transparent',tension:.3,pointRadius:3,borderWidth:1.5}))},
-    options:{...COPTS,plugins:{...COPTS.plugins},
-             scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>`${v}ms`}}}},
+          datasets:eps.map(ep=>({
+            label:ep, data:byEp[ep],
+            borderColor:epColor(ep),
+            backgroundColor:'transparent',
+            tension:.3, pointRadius:3, borderWidth:1.5,
+          }))},
+    options:{...COPTS,scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>`${v}ms`}}}},
   });
 
   // Percentiles
@@ -772,13 +1067,17 @@ function buildCharts(){
   S.charts.pc=new Chart(document.getElementById('cpercentiles').getContext('2d'),{
     type:'bar',
     data:{labels:['Mínimo','Mediana','Máximo'],
-          datasets:eps.map((ep,i)=>({label:ep,
+          datasets:eps.map(ep=>({
+            label:ep,
             data:[stats[ep].min,stats[ep].p50,stats[ep].max].map(Math.round),
-            backgroundColor:COLORS[i%COLORS.length]+'80',borderColor:COLORS[i%COLORS.length],borderWidth:1}))},
+            backgroundColor:epColor(ep)+'80',
+            borderColor:epColor(ep),
+            borderWidth:1,
+          }))},
     options:{...COPTS,scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>`${v}ms`}}}},
   });
 
-  // Histogram
+  // Histogram — usa cor do perfil de cada resultado
   killChart('hg');
   const all=res.map(r=>r.duration), mn=Math.min(...all), mx=Math.max(...all);
   const bk=10, bs=(mx-mn)/bk||1, cnt=Array(bk).fill(0);
@@ -796,8 +1095,10 @@ function buildCharts(){
     type:'doughnut',
     data:{labels:eps,
           datasets:[{data:eps.map(ep=>stats[ep].successRate),
-            backgroundColor:eps.map((_,i)=>COLORS[i%COLORS.length]+'90'),
-            borderColor:eps.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:1}]},
+            backgroundColor:eps.map(ep=>epColor(ep)+'90'),
+            borderColor:eps.map(ep=>epColor(ep)),
+            borderWidth:1,
+          }]},
     options:{responsive:true,maintainAspectRatio:false,
              plugins:{legend:{labels:{color:'#7a8db3',font:{family:"'JetBrains Mono',monospace",size:10},padding:8}},
                       tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw.toFixed(1)}%`}}}},
@@ -805,194 +1106,396 @@ function buildCharts(){
 }
 
 /* ════════════════════════════════════════════════════════════════
-   EXPORT
+   EXPORT XLSX / CSV
 ════════════════════════════════════════════════════════════════ */
 function doXLSX(){
-  if(!S.results.length)return;
-  const stats=Stats.calc(S.results);
-  const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  const wb=XLSX.utils.book_new();
+  if(!S.results.length) return;
+  const stats = Stats.calc(S.results);
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  const wb = XLSX.utils.book_new();
 
-  // Resumo
-  const rh=['Endpoint','Versao','Codigo','Qtd','Sucesso','Erros','Sucesso%',
-            'Min_ms','Mediana_ms','Max_ms','DesvPad_ms'];
+  const rh=['Endpoint','Versao','Codigo','Cor','Qtd','Sucesso','Erros','Sucesso%','Min_ms','Mediana_ms','Max_ms','DesvPad_ms'];
   const rr=Object.entries(stats).map(([ep,s])=>{
     const p=S.profiles.find(x=>x.nome===ep);
-    return [ep,p?.versao||'',p?.codigo||'?',s.count,s.count-s.errors,s.errors,
-            s.successRate.toFixed(1),
-            Math.round(s.min),Math.round(s.p50),Math.round(s.max),Math.round(s.stddev)];
+    return [ep,p?.versao||'',p?.codigo||'?',p?.color||'',s.count,s.count-s.errors,s.errors,
+            s.successRate.toFixed(1),Math.round(s.min),Math.round(s.p50),Math.round(s.max),Math.round(s.stddev)];
   });
   const ws1=XLSX.utils.aoa_to_sheet([rh,...rr]);
-  ws1['!cols']=[20,10,8,6,7,6,8,9,10,9,10].map(w=>({wch:w}));
+  ws1['!cols']=[22,10,8,8,6,7,6,8,9,10,9,10].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws1,'Resumo');
 
-  // Detalhes
-  const dh=['Seq','Endpoint','Versao','Codigo','NumAtendimento','Duracao_ms','Sucesso','HTTPStatus','Detalhe'];
+  const dh=['Seq','Endpoint','Versao','Codigo','NumAtendimento','NumAtendimentoDB','Data_Hora','Duracao_ms','Sucesso'];
   const dr=S.results.map(r=>[r.seq,r.endpoint,r.versao||'',r.codigo,r.numAtendimento,
-    Math.round(r.duration),r.success?'Sim':'Não',r.statusCode||'',r.errorDetail||'']);
+    r.numAtendimentoDB||'',r.timestamp||'',Math.round(r.duration),r.success?'Sim':'Não']);
   const ws2=XLSX.utils.aoa_to_sheet([dh,...dr]);
-  ws2['!cols']=[5,22,10,8,22,12,7,10,40].map(w=>({wch:w}));
+  ws2['!cols']=[5,22,10,8,22,22,22,12,7].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb,ws2,'Detalhes');
 
   XLSX.writeFile(wb,`STP_SOAP_${ts}.xlsx`);
 }
 
 function doCSV(){
-  if(!S.results.length)return;
-  const stats=Stats.calc(S.results);
-  const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  if(!S.results.length) return;
+  const stats = Stats.calc(S.results);
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
 
-  const dh='Seq,Endpoint,Versao,Codigo,NumAtendimento,Duracao_ms,Sucesso,HTTPStatus,Detalhe\n';
+  const dh='Seq,Endpoint,Versao,Codigo,NumAtendimento,NumAtendimentoDB,Data_Hora,Duracao_ms,Sucesso\n';
   const dr=S.results.map(r=>[r.seq,r.endpoint,r.versao||'',r.codigo,r.numAtendimento,
-    Math.round(r.duration),r.success?'Sim':'Não',r.statusCode||'',r.errorDetail||''].join(',')).join('\n');
-  dl('\ufeff'+dh+dr,`STP_Detalhes_${ts}.csv`,'text/csv');
+    r.numAtendimentoDB||'',r.timestamp||'',Math.round(r.duration),r.success?'Sim':'Não'].join(',')).join('\n');
+  dl('\ufeff'+dh+dr, `STP_Detalhes_${ts}.csv`, 'text/csv');
 
   const sh='Endpoint,Versao,Codigo,Qtd,Sucesso,Erros,Sucesso%,Min_ms,Mediana_ms,Max_ms,DesvPad_ms\n';
   const sr=Object.entries(stats).map(([ep,s])=>{
     const p=S.profiles.find(x=>x.nome===ep);
     return [ep,p?.versao||'',p?.codigo||'?',s.count,s.count-s.errors,s.errors,
-            s.successRate.toFixed(1),
-            Math.round(s.min),Math.round(s.p50),Math.round(s.max),Math.round(s.stddev)].join(',');
+            s.successRate.toFixed(1),Math.round(s.min),Math.round(s.p50),Math.round(s.max),Math.round(s.stddev)].join(',');
   }).join('\n');
-  dl('\ufeff'+sh+sr,`STP_Resumo_${ts}.csv`,'text/csv');
+  dl('\ufeff'+sh+sr, `STP_Resumo_${ts}.csv`, 'text/csv');
 }
 
-function dl(content,name,mime){
+function dl(content, name, mime){
   const a=Object.assign(document.createElement('a'),
     {href:URL.createObjectURL(new Blob([content],{type:mime})),download:name});
-  document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},100);
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 100);
 }
 
 /* ════════════════════════════════════════════════════════════════
-   UI
+   UI HELPERS
 ════════════════════════════════════════════════════════════════ */
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function fms(ms){return ms>=10000?`${(ms/1000).toFixed(1)}s`:`${Math.round(ms).toLocaleString('pt-BR')} ms`;}
-function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function fms(ms){ return ms>=10000?`${(ms/1000).toFixed(1)}s`:`${Math.round(ms).toLocaleString('pt-BR')} ms`; }
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function syncUI(){
-  const req=+document.getElementById('cfg-req').value;
-  document.getElementById('lreq').textContent=req;
-  document.getElementById('lcon').textContent=document.getElementById('cfg-con').value;
-  const r=+document.getElementById('cfg-rmp').value;
-  document.getElementById('lrmp').textContent=r===0?'0s (sem ramp-up)':`${r}s`;
+  const req = +document.getElementById('cfg-req').value;
+  document.getElementById('lreq').textContent = req;
+  document.getElementById('lcon').textContent = document.getElementById('cfg-con').value;
+  const r = +document.getElementById('cfg-rmp').value;
+  document.getElementById('lrmp').textContent = r===0 ? '0s (desativado)' : `${r}s`;
   renderNumPreview(req);
   updateRunBtn();
 }
 
+function toggleAdv(){
+  const el = document.getElementById('adv-fields');
+  const ar = document.getElementById('adv-arrow');
+  const open = el.classList.toggle('open');
+  ar.classList.toggle('open', open);
+}
+
 function renderNumPreview(req){
-  const ids=[...S.selected];
-  if(!ids.length){document.getElementById('nprev').textContent='Selecione perfis para visualizar.';return;}
-  const td=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  let h='';
-  ids.forEach(id=>{
-    const p=PM.get(id);if(!p)return;
-    const c=p.codigo.toUpperCase(), cur=CM.peek(c);
-    h+=`<div><span style="color:var(--text2)">${esc(p.nome)}: </span>`+
-       `<span class="ne">${c}${td}${String(cur+1).padStart(3,'0')}</span> → `+
-       `<span class="ne">${c}${td}${String(cur+req).padStart(3,'0')}</span>`+
-       `<span style="color:var(--text3)"> (${req} req)</span></div>`;
+  const ids = [...S.selected];
+  if(!ids.length){ document.getElementById('nprev').textContent='Selecione perfis para visualizar.'; return; }
+  const td = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  let h = '';
+  ids.forEach(id => {
+    const p = PM.get(id); if(!p) return;
+    const c = p.codigo.toUpperCase(), cur = CM.peek(c);
+    h += `<div><span style="color:var(--text2)">${esc(p.nome)}: </span>`+
+         `<span class="ne">${c}${td}${String(cur+1).padStart(3,'0')}</span> → `+
+         `<span class="ne">${c}${td}${String(cur+req).padStart(3,'0')}</span>`+
+         `<span style="color:var(--text3)"> (${req} req)</span></div>`;
   });
-  document.getElementById('nprev').innerHTML=h;
+  document.getElementById('nprev').innerHTML = h;
 }
 
 function updateRunBtn(){
-  document.getElementById('btnrun').disabled=S.selected.size===0||S.running;
+  document.getElementById('btnrun').disabled = S.selected.size===0 || S.running;
 }
 
+/* ── Render sidebar ── */
+function renderAll(){ renderProfiles(); renderChips(); syncUI(); populateGroupSelect(); }
+
 function renderProfiles(){
-  const el=document.getElementById('plist');
-  if(!S.profiles.length){
-    el.innerHTML='<div style="padding:18px;text-align:center;color:var(--text3);font-size:11px">Nenhum perfil.<br>Clique em <b>+ Novo Perfil</b>.</div>';
+  const el = document.getElementById('plist');
+  if(!S.profiles.length && !S.groups.length){
+    el.innerHTML='<div style="padding:18px;text-align:center;color:var(--text3);font-size:11px">Nenhum perfil.<br>Clique em <b>+ Perfil</b>.</div>';
     return;
   }
-  el.innerHTML=S.profiles.map(p=>`
-    <div class="pcard ${S.selected.has(p.id)?'sel':''}" onclick="toggleP('${p.id}')">
-      <div class="pcard-top">
-        <div class="pchk">
-          <svg width="10" height="8" fill="none" stroke="#000" stroke-width="2" viewBox="0 0 10 8">
-            <polyline points="1,4 4,7 9,1"/>
+  let h = '';
+
+  // Perfis sem grupo
+  const ungrouped = S.profiles.filter(p => !p.groupId || !GM.get(p.groupId));
+  ungrouped.forEach(p => { h += renderProfileCard(p); });
+
+  // Grupos
+  S.groups.forEach(g => {
+    const members = S.profiles.filter(p => p.groupId === g.id);
+    const gKey = `grp_open_${g.id}`;
+    const isOpen = localStorage.getItem(gKey) !== 'false';
+    const allSel = members.length > 0 && members.every(p => S.selected.has(p.id));
+
+    h += `<div>
+      <div class="grp-header" onclick="toggleGroupCollapse('${g.id}')">
+        <div class="grp-dot" style="background:${esc(g.color||'#00e87a')}"></div>
+        <span class="grp-name">${esc(g.nome)}</span>
+        <span class="grp-count">${members.length}</span>
+        <div class="grp-actions" onclick="event.stopPropagation()">
+          ${members.length?`<button class="grp-run-btn" title="Selecionar/desselecionar todos"
+            onclick="toggleGroupSelect('${g.id}')">${allSel?'✓ Todos':'Sel. Todos'}</button>`:''}
+          <button class="bico" title="Editar grupo" onclick="openGroupModal('${g.id}')">✎</button>
+          <button class="bico del" title="Excluir grupo" onclick="delGroup('${g.id}')">✕</button>
+        </div>
+        <span class="grp-arrow ${isOpen?'open':''}">▶</span>
+      </div>
+      <div class="grp-body ${isOpen?'':'collapsed'}" id="grp-body-${g.id}">
+        ${members.length ? members.map(p => renderProfileCard(p)).join('') :
+          '<div style="padding:8px 10px;color:var(--text3);font-size:10px">Grupo vazio</div>'}
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = h;
+}
+
+function renderProfileCard(p){
+  const color = p.color || '#00e87a';
+  const sel = S.selected.has(p.id);
+  return `<div class="pcard ${sel?'sel':''}" onclick="toggleP('${p.id}')">
+    <div class="pcard-top">
+      <div class="pchk" style="${sel?`background:${color};border-color:${color}`:''}">
+        <div class="pchk-dot" style="background:#000;${sel?'opacity:1':'opacity:0'}">
+          <svg width="8" height="6" fill="none" stroke="#000" stroke-width="2" viewBox="0 0 8 6" style="display:${sel?'block':'none'}">
+            <polyline points="1,3 3,5 7,1"/>
           </svg>
         </div>
-        <span class="pname">${esc(p.nome)}</span>
-        <span class="pcode">${esc(p.codigo)}</span>
       </div>
-      ${p.versao?`<div class="pver">versão: ${esc(p.versao)}</div>`:''}
-      <div class="purl">${esc(p.url)}</div>
-      <div class="pacts">
-        <button class="bico" title="Editar" onclick="event.stopPropagation();openModal('${p.id}')">✎</button>
-        <button class="bico del" title="Excluir" onclick="event.stopPropagation();delProfile('${p.id}')">✕</button>
-      </div>
-    </div>`).join('');
+      <span class="pname">${esc(p.nome)}</span>
+      <span class="pcode" style="color:${color};border-color:${color}20;background:${color}15">${esc(p.codigo)}</span>
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+    </div>
+    ${p.versao?`<div class="pver">versão: ${esc(p.versao)}</div>`:''}
+    <div class="purl">${esc(p.url)}</div>
+    <div class="pacts">
+      <button class="bico" title="Editar" onclick="event.stopPropagation();openModal('${p.id}')">✎</button>
+      <button class="bico del" title="Excluir" onclick="event.stopPropagation();delProfile('${p.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function toggleGroupCollapse(gid){
+  const body = document.getElementById(`grp-body-${gid}`);
+  if(!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  const key = `grp_open_${gid}`;
+  localStorage.setItem(key, collapsed ? 'false' : 'true');
+  // Update arrow (re-render lightweight)
+  renderProfiles();
+}
+
+function toggleGroupSelect(gid){
+  if(S.running) return;
+  const members = S.profiles.filter(p => p.groupId === gid);
+  if(!members.length) return;
+  const allSel = members.every(p => S.selected.has(p.id));
+  members.forEach(p => allSel ? S.selected.delete(p.id) : S.selected.add(p.id));
+  renderAll();
 }
 
 function renderChips(){
-  const el=document.getElementById('chips');
-  if(!S.selected.size){el.innerHTML='<span class="nochip">Selecione perfis ao lado</span>';return;}
-  el.innerHTML=[...S.selected].map(id=>{
-    const p=PM.get(id);
-    return p?`<span class="chip">${esc(p.codigo)}${p.versao?' · '+esc(p.versao):''}</span>`:'';
+  const el = document.getElementById('chips');
+  if(!S.selected.size){ el.innerHTML='<span class="nochip">Selecione perfis ao lado</span>'; return; }
+  el.innerHTML = [...S.selected].map(id => {
+    const p = PM.get(id);
+    const color = p?.color || '#00e87a';
+    return p ? `<span class="chip" style="color:${color};border-color:${color};background:${color}15">`+
+               `${esc(p.codigo)}${p.versao?' · '+esc(p.versao):''}</span>` : '';
   }).join('');
 }
 
 function toggleP(id){
-  if(S.running)return;
-  S.selected.has(id)?S.selected.delete(id):S.selected.add(id);
-  renderProfiles();renderChips();syncUI();
+  if(S.running) return;
+  S.selected.has(id) ? S.selected.delete(id) : S.selected.add(id);
+  renderProfiles(); renderChips(); syncUI();
 }
 
-function logLine(type,text){
-  const el=document.getElementById('livelog');
-  const now=new Date().toTimeString().slice(0,8);
-  const d=document.createElement('div');
-  d.className='le';
-  d.innerHTML=`<span class="lt">${now}</span><span class="l${type}">${esc(text)}</span>`;
-  el.appendChild(d);el.scrollTop=el.scrollHeight;
+/* ── Per-profile progress bars ── */
+function renderPerProfileBars(profiles){
+  const el = document.getElementById('per-profile-bars');
+  el.innerHTML = profiles.map(p => {
+    const color = p.color || '#00e87a';
+    return `<div class="ppbar" id="ppbar-${p.id}">
+      <div class="ppbar-top">
+        <div class="ppbar-dot" style="background:${color}"></div>
+        <span class="ppbar-name">${esc(p.nome)}</span>
+        <span class="ppbar-stat" id="ppbar-stat-${p.id}">0 / —</span>
+      </div>
+      <div class="ppbar-track">
+        <div class="ppbar-fill" id="ppbar-fill-${p.id}" style="width:0%;background:${color}"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function onResult(r){
-  S.done=S.results.length;
-  const ok=S.results.filter(x=>x.success).length;
-  const er=S.results.filter(x=>!x.success).length;
-  document.getElementById('pbfill').style.width=`${(S.done/S.total)*100}%`;
-  document.getElementById('pdone').textContent=S.done;
-  document.getElementById('pok').textContent=ok;
-  document.getElementById('perr').textContent=er;
-  const ico=r.success?'✓':'✗', tp=r.success?'ok':'err';
-  logLine(tp,`${ico} [${r.endpoint}${r.versao?' '+r.versao:''}] ${r.numAtendimento} — ${fms(r.duration)}${r.errorDetail?' · '+r.errorDetail:''}`);
+function updatePerProfileBar(profileId){
+  const pp = Engine._perProfile[profileId];
+  if(!pp) return;
+  const pct = pp.total > 0 ? (pp.done/pp.total)*100 : 0;
+  const fillEl = document.getElementById(`ppbar-fill-${profileId}`);
+  const statEl = document.getElementById(`ppbar-stat-${profileId}`);
+  if(fillEl) fillEl.style.width = `${pct}%`;
+  if(statEl) statEl.textContent = `${pp.done}/${pp.total} · ${pp.ok} OK`;
 }
 
+/* ── Log tabs (geral + por perfil) ── */
+let activeLog = '__all__';
+
+function ensureLogTab(profileId, profileNome, color){
+  if(document.getElementById(`log-${profileId}`)) return;
+  const tabs = document.getElementById('log-tabs');
+  const btn = document.createElement('button');
+  btn.className = 'log-tab';
+  btn.dataset.log = profileId;
+  btn.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${color};margin-right:4px"></span>${esc(profileNome)}`;
+  btn.onclick = () => switchLog(profileId, btn);
+  tabs.appendChild(btn);
+
+  const pane = document.createElement('div');
+  pane.className = 'log-pane';
+  pane.id = `log-${profileId}`;
+  pane.innerHTML = `<div class="livelog" id="livelog-${profileId}"></div>`;
+  tabs.parentNode.insertBefore(pane, tabs.nextSibling.nextSibling);
+}
+
+function switchLog(logId, btn){
+  document.querySelectorAll('.log-tab').forEach(b => b.classList.remove('act'));
+  document.querySelectorAll('.log-pane').forEach(p => p.classList.remove('act'));
+  btn.classList.add('act');
+  document.getElementById(`log-${logId}`)?.classList.add('act');
+  activeLog = logId;
+}
+
+function logLine(logId, type, text){
+  const el = document.getElementById(`livelog-${logId}`);
+  if(!el) return;
+  const now = new Date().toTimeString().slice(0,8);
+  const d = document.createElement('div');
+  d.className = 'le';
+  d.innerHTML = `<span class="lt">${now}</span><span class="l${type}">${esc(text)}</span>`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function onResult(r, profileId){
+  // Update global counters
+  const ok  = S.results.filter(x=>x.success).length;
+  const er  = S.results.filter(x=>!x.success).length;
+  document.getElementById('pbfill').style.width  = `${(S.done/S.total)*100}%`;
+  document.getElementById('pdone').textContent = S.done;
+  document.getElementById('pok').textContent   = ok;
+  document.getElementById('perr').textContent  = er;
+
+  // Update per-profile bar
+  updatePerProfileBar(profileId);
+
+  // Log to general + profile-specific
+  const ico = r.success ? '✓' : '✗', tp = r.success ? 'ok' : 'err';
+  const msg = `${ico} [${r.endpoint}${r.versao?' '+r.versao:''}] ${r.numAtendimento}${r.numAtendimentoDB?' → '+r.numAtendimentoDB:''} — ${fms(r.duration)}${r.errorDetail?' · '+r.errorDetail:''}`;
+  logLine('__all__', tp, msg);
+  logLine(profileId, tp, msg);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DETAIL TABLE: SORT + FILTER
+════════════════════════════════════════════════════════════════ */
+function sortDetails(col){
+  if(S.sortCol === col) S.sortAsc = !S.sortAsc;
+  else { S.sortCol = col; S.sortAsc = true; }
+  renderDetailTable();
+  // Update header indicators
+  document.querySelectorAll('.dtab th').forEach(th => th.classList.remove('sorted'));
+  const headers = document.querySelectorAll('.dtab th');
+  const cols = ['seq','endpoint','versao','numAtendimento','numAtendimentoDB','timestamp','duration','success'];
+  const idx = cols.indexOf(col);
+  if(idx >= 0 && headers[idx]) headers[idx].classList.add('sorted');
+}
+
+function filterDetails(){ renderDetailTable(); }
+
+function getFilters(){
+  return {
+    ep:    document.getElementById('f-ep')?.value.trim().toLowerCase()    || '',
+    ver:   document.getElementById('f-ver')?.value.trim().toLowerCase()   || '',
+    num:   document.getElementById('f-num')?.value.trim().toLowerCase()   || '',
+    numdb: document.getElementById('f-numdb')?.value.trim().toLowerCase() || '',
+    dt:    document.getElementById('f-dt')?.value.trim().toLowerCase()    || '',
+    st:    document.getElementById('f-st')?.value.trim().toLowerCase()    || '',
+  };
+}
+
+function renderDetailTable(){
+  const f = getFilters();
+  let rows = [...S.results];
+
+  // Filter
+  if(f.ep)    rows = rows.filter(r => r.endpoint.toLowerCase().includes(f.ep));
+  if(f.ver)   rows = rows.filter(r => (r.versao||'').toLowerCase().includes(f.ver));
+  if(f.num)   rows = rows.filter(r => r.numAtendimento.toLowerCase().includes(f.num));
+  if(f.numdb) rows = rows.filter(r => (r.numAtendimentoDB||'').toLowerCase().includes(f.numdb));
+  if(f.dt)    rows = rows.filter(r => (r.timestamp||'').toLowerCase().includes(f.dt));
+  if(f.st)    rows = rows.filter(r => (r.success?'ok':'erro').includes(f.st));
+
+  // Sort
+  rows.sort((a,b) => {
+    let va = a[S.sortCol] ?? '', vb = b[S.sortCol] ?? '';
+    if(typeof va === 'string') va = va.toLowerCase();
+    if(typeof vb === 'string') vb = vb.toLowerCase();
+    if(va < vb) return S.sortAsc ? -1 : 1;
+    if(va > vb) return S.sortAsc ?  1 : -1;
+    return 0;
+  });
+
+  const color = r => r.color || '#00e87a';
+  document.getElementById('dtbody').innerHTML = rows.map(r => {
+    const dc = r.duration>15000?'dc':r.duration>8000?'dw':'';
+    const ts = r.timestamp ? r.timestamp.replace('T',' ').slice(0,19) : '—';
+    return `<tr>
+      <td>${r.seq}</td>
+      <td style="color:${color(r)}">${esc(r.endpoint)}</td>
+      <td style="color:var(--text2)">${esc(r.versao||'—')}</td>
+      <td style="color:var(--accent);font-family:var(--mono)">${esc(r.numAtendimento)}</td>
+      <td style="color:var(--warn);font-family:var(--mono)">${esc(r.numAtendimentoDB||'—')}</td>
+      <td style="color:var(--text3);font-size:10px">${ts}</td>
+      <td class="dh ${dc}">${fms(r.duration)}</td>
+      <td class="${r.success?'dok':'derr'}">${r.success?'✓ OK':'✗ ERRO'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDER RESULTS
+════════════════════════════════════════════════════════════════ */
 function renderResults(){
-  const has=S.results.length>0;
-  document.getElementById('empty').style.display=has?'none':'flex';
-  document.getElementById('bxlsx').disabled=!has;
-  document.getElementById('bcsv').disabled=!has;
-  if(!has)return;
+  const has = S.results.length > 0;
+  document.getElementById('empty').style.display = has ? 'none' : 'flex';
+  document.getElementById('bxlsx').disabled = !has;
+  document.getElementById('bcsv').disabled  = !has;
+  if(!has) return;
 
-  const stats=Stats.calc(S.results);
+  const stats = Stats.calc(S.results);
 
   // Summary
-  const grid=document.getElementById('sgrid');
-  grid.innerHTML='';
+  const grid = document.getElementById('sgrid');
+  grid.innerHTML = '';
+  if(IS_FILE) document.getElementById('filebanner').style.display = 'block';
 
-  // Show file:// banner in summary tab
-  if(IS_FILE) document.getElementById('filebanner').style.display='block';
-
-  for(const [ep,s] of Object.entries(stats)){
-    const p=S.profiles.find(x=>x.nome===ep);
-    const ec=s.errors>0?'e':'a';
-    grid.innerHTML+=`
+  for(const [ep, s] of Object.entries(stats)){
+    const p = S.profiles.find(x=>x.nome===ep);
+    const color = p?.color || '#00e87a';
+    const ec = s.errors>0 ? 'e' : 'a';
+    grid.innerHTML += `
       <div class="sepc" style="animation:fadeIn 200ms ease both">
         <div class="seph">
-          <span class="sepcode">${esc(p?.codigo||'?')}</span>
+          <div class="sep-pdot" style="background:${color}"></div>
+          <span class="sepcode" style="color:${color};background:${color}15;border:1px solid ${color}30">${esc(p?.codigo||'?')}</span>
           ${p?.versao?`<span class="sepver">${esc(p.versao)}</span>`:''}
           <span class="sepname">${esc(ep)}</span>
           <span class="sepmeta">${s.count} req · ${s.successRate.toFixed(0)}% OK</span>
         </div>
         <div class="smet" style="grid-template-columns:repeat(4,1fr)">
           <div class="sm"><div class="sml">MÍNIMO</div><div class="smv">${fms(s.min)}</div></div>
-          <div class="sm"><div class="sml">MEDIANA</div><div class="smv a">${fms(s.p50)}</div></div>
+          <div class="sm"><div class="sml">MEDIANA</div><div class="smv" style="color:${color}">${fms(s.p50)}</div></div>
           <div class="sm"><div class="sml">MÁXIMO</div><div class="smv">${fms(s.max)}</div></div>
           <div class="sm"><div class="sml">DESVIO PADRÃO</div><div class="smv w">${fms(s.stddev)}</div></div>
         </div>
@@ -1001,28 +1504,14 @@ function renderResults(){
           <tbody><tr>
             <td style="color:var(--text3);font-size:10px">Resultado</td>
             <td>${s.count}</td>
-            <td class="smv a" style="font-size:13px">${s.count - s.errors}</td>
-            <td class="smv ${ec}" style="font-size:13px">${s.errors}</td>
+            <td style="font-family:var(--mono);font-size:13px;font-weight:700;color:${color};text-align:right">${s.count-s.errors}</td>
+            <td class="smv ${ec}" style="font-size:13px;text-align:right">${s.errors}</td>
           </tr></tbody>
         </table>
       </div>`;
   }
 
-  // Details
-  document.getElementById('dtbody').innerHTML=S.results.map(r=>{
-    const dc=r.duration>15000?'dc':r.duration>8000?'dw':'';
-    return `<tr>
-      <td>${r.seq}</td>
-      <td>${esc(r.endpoint)}</td>
-      <td style="color:var(--text2);font-family:var(--mono)">${esc(r.versao||'—')}</td>
-      <td style="color:var(--accent)">${esc(r.numAtendimento)}</td>
-      <td class="dh ${dc}">${fms(r.duration)}</td>
-      <td class="${r.success?'dok':'derr'}">${r.success?'✓ OK':'✗ ERRO'}</td>
-      <td style="color:var(--text3)">${r.statusCode||'—'}</td>
-      <td style="color:var(--err);font-size:10px">${esc(r.errorDetail||'')}</td>
-    </tr>`;
-  }).join('');
-
+  renderDetailTable();
   buildCharts();
 }
 
@@ -1030,171 +1519,209 @@ function renderResults(){
    TEST CONTROL
 ════════════════════════════════════════════════════════════════ */
 async function toggleTest(){
-  if(S.running){S.abort=true;return;}
+  if(S.running){ S.abort=true; return; }
 
-  const profiles=[...S.selected].map(id=>PM.get(id)).filter(Boolean);
-  if(!profiles.length)return;
+  const profiles = [...S.selected].map(id=>PM.get(id)).filter(Boolean);
+  if(!profiles.length) return;
 
-  const cfg={
-    req:+document.getElementById('cfg-req').value,
-    con:+document.getElementById('cfg-con').value,
-    ramp:+document.getElementById('cfg-rmp').value,
-    tmo:+document.getElementById('cfg-tmo').value,
+  const cfg = {
+    req:  +document.getElementById('cfg-req').value,
+    con:  +document.getElementById('cfg-con').value,
+    ramp: +document.getElementById('cfg-rmp').value,
+    tmo:  +document.getElementById('cfg-tmo').value,
   };
 
-  S.running=true;S.results=[];
-  document.getElementById('progsec').classList.add('vis');
-  document.getElementById('livelog').innerHTML='';
-  document.getElementById('pbfill').style.width='0%';
-  ['pdone','pok','perr'].forEach(id=>document.getElementById(id).textContent='0');
-  document.getElementById('empty').style.display='none';
+  S.running = true; S.results = [];
+  const progsec = document.getElementById('progsec');
+  progsec.classList.add('vis');
+  document.getElementById('livelog-__all__').innerHTML = '';
+  document.getElementById('pbfill').style.width = '0%';
+  ['pdone','pok','perr'].forEach(id => document.getElementById(id).textContent='0');
+  document.getElementById('empty').style.display = 'none';
 
-  const btn=document.getElementById('btnrun');
-  btn.innerHTML='⏹ &nbsp;PARAR TESTE';btn.classList.add('stop');btn.disabled=false;
-  const hb=document.getElementById('hbadge');hb.textContent='EXECUTANDO';hb.className='run';
+  // Reset log tabs: keep only General
+  const logTabs = document.getElementById('log-tabs');
+  logTabs.innerHTML = '<button class="log-tab act" data-log="__all__" onclick="switchLog(\'__all__\',this)">Geral</button>';
+  document.querySelectorAll('.log-pane:not(#log-__all__)').forEach(e=>e.remove());
+  document.getElementById('log-__all__').classList.add('act');
 
-  logLine('inf',`Iniciando: ${profiles.length} endpoint(s) × ${cfg.req} req = ${profiles.length*cfg.req} total · concorrência=${cfg.con}`);
+  // Create per-profile log tabs
+  profiles.forEach(p => {
+    ensureLogTab(p.id, p.nome, p.color||'#00e87a');
+  });
 
-  try{ await Engine.run(profiles,cfg); }
+  const btn = document.getElementById('btnrun');
+  btn.innerHTML='⏹ &nbsp;PARAR TESTE'; btn.classList.add('stop'); btn.disabled=false;
+  const hb = document.getElementById('hbadge');
+  hb.textContent='EXECUTANDO'; hb.className='run';
+
+  logLine('__all__', 'inf', `Iniciando: ${profiles.length} endpoint(s) × ${cfg.req} req = ${profiles.length*cfg.req} total · concorrência=${cfg.con}`);
+
+  try{ await Engine.run(profiles, cfg); }
   finally{
-    S.running=false;
-    btn.innerHTML='▶ &nbsp;INICIAR TESTE';btn.classList.remove('stop');updateRunBtn();
-    hb.textContent='CONCLUÍDO';hb.className='done';
-    logLine('inf',`Concluído: ${S.done} req · ${S.results.filter(r=>r.success).length} OK · ${S.results.filter(r=>!r.success).length} ERRO`);
+    S.running = false;
+    btn.innerHTML='▶ &nbsp;INICIAR TESTE'; btn.classList.remove('stop'); updateRunBtn();
+    hb.textContent='CONCLUÍDO'; hb.className='done';
+    logLine('__all__', 'inf', `Concluído: ${S.done} req · ${S.results.filter(r=>r.success).length} OK · ${S.results.filter(r=>!r.success).length} ERRO`);
     renderResults();
-    tab('summary',document.querySelector('.rtab'));
+    tab('summary', document.querySelector('.rtab'));
   }
 }
 
-function tab(name,btn){
+function tab(name, btn){
   document.querySelectorAll('.tpane').forEach(e=>e.classList.remove('act'));
   document.querySelectorAll('.rtab').forEach(e=>e.classList.remove('act'));
-  document.getElementById('tab-'+name).classList.add('act');
-  btn.classList.add('act');
+  document.getElementById('tab-'+name)?.classList.add('act');
+  if(btn) btn.classList.add('act');
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MODAL
+   MODAL: PROFILE
 ════════════════════════════════════════════════════════════════ */
+function populateGroupSelect(){
+  const sel = document.getElementById('fgrupo');
+  const cur = sel?.value;
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— sem grupo —</option>' +
+    S.groups.map(g => `<option value="${esc(g.id)}">${esc(g.nome)}</option>`).join('');
+  if(cur) sel.value = cur;
+}
+
 function openModal(id){
   document.getElementById('modal').classList.add('open');
+  populateGroupSelect();
   if(id){
-    const p=PM.get(id);
-    document.getElementById('mtit').textContent='Editar Perfil';
-    document.getElementById('fid').value=p.id;
-    document.getElementById('fnome').value=p.nome;
-    document.getElementById('fcodigo').value=p.codigo;
-    document.getElementById('fversao').value=p.versao||'';
-    document.getElementById('furl').value=p.url;
-    document.getElementById('flogin').value=p.login||'';
-    document.getElementById('fsenha').value=p.senha||'';
-    document.getElementById('fsoapaction').value=p.soapAction||'';
-    document.getElementById('fpayload').value=p.payloadTemplate||'';
+    const p = PM.get(id);
+    document.getElementById('mtit').textContent = 'Editar Perfil';
+    document.getElementById('fid').value       = p.id;
+    document.getElementById('fnome').value     = p.nome;
+    document.getElementById('fcodigo').value   = p.codigo;
+    document.getElementById('fversao').value   = p.versao||'';
+    document.getElementById('furl').value      = p.url;
+    document.getElementById('flogin').value    = p.login||'';
+    document.getElementById('fsenha').value    = p.senha||'';
+    document.getElementById('fsoapaction').value = p.soapAction||'';
+    document.getElementById('fmethod').value   = p.method||'';
+    document.getElementById('fpayload').value  = p.payloadTemplate||'';
+    document.getElementById('fxmltag').value   = p.xmlTag||'diag:NumeroAtendimentoApoiado';
+    document.getElementById('fgrupo').value    = p.groupId||'';
+    const c = p.color||'#00e87a';
+    document.getElementById('fcolor').value = c;
+    document.getElementById('color-preview').style.background = c;
   } else {
-    document.getElementById('mtit').textContent='Novo Perfil';
-    document.getElementById('fid').value='';
-    ['fnome','fcodigo','fversao','furl','flogin','fsenha','fsoapaction','fpayload']
-      .forEach(f=>document.getElementById(f).value='');
+    document.getElementById('mtit').textContent = 'Novo Perfil';
+    document.getElementById('fid').value = '';
+    ['fnome','fcodigo','fversao','furl','flogin','fsenha','fsoapaction','fmethod','fpayload'].forEach(f => document.getElementById(f).value='');
+    document.getElementById('fxmltag').value = 'diag:NumeroAtendimentoApoiado';
+    document.getElementById('fgrupo').value  = '';
+    const c = nextColor();
+    document.getElementById('fcolor').value = c;
+    document.getElementById('color-preview').style.background = c;
   }
 }
+
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
-document.getElementById('modal').addEventListener('click',e=>{ if(e.target===document.getElementById('modal')) closeModal(); });
-document.getElementById('fcodigo').addEventListener('input',function(){ this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+
+document.getElementById('modal').addEventListener('click', e => {
+  if(e.target === document.getElementById('modal')) closeModal();
+});
+document.getElementById('fcodigo').addEventListener('input', function(){
+  this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+});
 
 function saveProfile(){
-  const nome=document.getElementById('fnome').value.trim();
-  const codigo=document.getElementById('fcodigo').value.trim().toUpperCase();
-  const url=document.getElementById('furl').value.trim();
-  const payload=document.getElementById('fpayload').value;
-  if(!nome||!codigo||!url||!payload){alert('Preencha: Nome, Código, URL e Payload.');return;}
-  if(!/^[A-Z0-9]{2,6}$/.test(codigo)){alert('Código: 2–6 letras/números (ex: PRO, HAP).');return;}
-  const p={
-    id:document.getElementById('fid').value||null,
-    nome,codigo,versao:document.getElementById('fversao').value.trim(),
-    url,login:document.getElementById('flogin').value,
-    senha:document.getElementById('fsenha').value,
-    soapAction:document.getElementById('fsoapaction').value,
-    payloadTemplate:payload,
+  const nome    = document.getElementById('fnome').value.trim();
+  const codigo  = document.getElementById('fcodigo').value.trim().toUpperCase();
+  const url     = document.getElementById('furl').value.trim();
+  const payload = document.getElementById('fpayload').value;
+  if(!nome||!codigo||!url||!payload){ alert('Preencha: Nome, Código, URL e Payload.'); return; }
+  if(!/^[A-Z0-9]{2,6}$/.test(codigo)){ alert('Código: 2–6 letras/números.'); return; }
+  const p = {
+    id:              document.getElementById('fid').value || null,
+    nome, codigo,
+    versao:          document.getElementById('fversao').value.trim(),
+    color:           document.getElementById('fcolor').value,
+    url,
+    login:           document.getElementById('flogin').value,
+    senha:           document.getElementById('fsenha').value,
+    soapAction:      document.getElementById('fsoapaction').value,
+    method:          document.getElementById('fmethod').value.trim(),
+    xmlTag:          document.getElementById('fxmltag').value.trim(),
+    payloadTemplate: payload,
+    groupId:         document.getElementById('fgrupo').value || null,
   };
-  p.id?PM.update(p):PM.add(p);
-  closeModal();renderProfiles();renderChips();syncUI();
+  p.id ? PM.update(p) : PM.add(p);
+  closeModal(); renderAll();
 }
 
 function delProfile(id){
-  if(!confirm('Excluir este perfil?'))return;
-  PM.del(id);renderProfiles();renderChips();syncUI();
+  if(!confirm('Excluir este perfil?')) return;
+  PM.del(id); renderAll();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MODAL: GROUP
+════════════════════════════════════════════════════════════════ */
+function openGroupModal(id){
+  document.getElementById('grp-modal').classList.add('open');
+  if(id){
+    const g = GM.get(id);
+    document.getElementById('grp-mtit').textContent = 'Editar Grupo';
+    document.getElementById('gid').value   = g.id;
+    document.getElementById('gnome').value = g.nome;
+    const c = g.color||'#00e87a';
+    document.getElementById('gcolor').value = c;
+    document.getElementById('gcolor-preview').style.background = c;
+  } else {
+    document.getElementById('grp-mtit').textContent = 'Novo Grupo';
+    document.getElementById('gid').value   = '';
+    document.getElementById('gnome').value = '';
+    const c = nextColor();
+    document.getElementById('gcolor').value = c;
+    document.getElementById('gcolor-preview').style.background = c;
+  }
+}
+
+function closeGroupModal(){ document.getElementById('grp-modal').classList.remove('open'); }
+
+document.getElementById('grp-modal').addEventListener('click', e => {
+  if(e.target === document.getElementById('grp-modal')) closeGroupModal();
+});
+
+function saveGroup(){
+  const nome = document.getElementById('gnome').value.trim();
+  if(!nome){ alert('Informe o nome do grupo.'); return; }
+  const g = {
+    id:    document.getElementById('gid').value || null,
+    nome,
+    color: document.getElementById('gcolor').value,
+  };
+  g.id ? GM.update(g) : GM.add(g);
+  closeGroupModal(); renderAll();
+}
+
+function delGroup(id){
+  if(!confirm('Excluir este grupo? Os perfis do grupo ficarão sem grupo.')) return;
+  GM.del(id); renderAll();
 }
 
 /* ════════════════════════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════════════════════════ */
-Chart.defaults.color='#7a8db3';
-Chart.defaults.font.family="'JetBrains Mono',monospace";
-Chart.defaults.font.size=10;
+Chart.defaults.color = '#7a8db3';
+Chart.defaults.font.family = "'JetBrains Mono',monospace";
+Chart.defaults.font.size = 10;
 
+GM.load();
 PM.load();
-renderProfiles();
-renderChips();
-syncUI();
+renderAll();
 
-// Mostrar banner se file://
 if(IS_FILE){
-  document.getElementById('empty').style.display='none';
+  document.getElementById('empty').style.display = 'none';
   document.getElementById('tab-summary').classList.add('act');
-  document.querySelectorAll('.rtab').forEach((e,i)=>{if(i===0)e.classList.add('act');});
-  document.getElementById('filebanner').style.display='block';
+  document.querySelectorAll('.rtab').forEach((e,i)=>{ if(i===0) e.classList.add('act'); });
+  document.getElementById('filebanner').style.display = 'block';
 }
-
-/* ════════════════════════════════════════════════════════════════
-   AUTENTICAÇÃO — credenciais validadas no servidor (Vercel)
-   Nunca expostas no código-fonte do HTML
-════════════════════════════════════════════════════════════════ */
-const SESSION_KEY = 'stp_auth';
-
-async function doLogin() {
-  const u = document.getElementById('lu').value.trim();
-  const p = document.getElementById('lp').value;
-  const btn = document.querySelector('.login-btn');
-  const errEl = document.getElementById('lerr');
-
-  if (!u || !p) { errEl.textContent = 'Preencha usuário e senha.'; return; }
-
-  btn.textContent = 'VERIFICANDO...';
-  btn.disabled = true;
-  errEl.textContent = '';
-
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario: u, senha: p }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      document.getElementById('login-screen').classList.add('hidden');
-    } else {
-      errEl.textContent = 'Usuário ou senha incorretos.';
-      document.getElementById('lp').value = '';
-      document.getElementById('lp').focus();
-    }
-  } catch(e) {
-    errEl.textContent = 'Erro de conexão. Tente novamente.';
-  } finally {
-    btn.textContent = 'ENTRAR';
-    btn.disabled = false;
-  }
-}
-
-// Checa sessão ao carregar
-(function checkAuth() {
-  if (!sessionStorage.getItem(SESSION_KEY)) {
-    document.getElementById('login-screen').classList.remove('hidden');
-  } else {
-    document.getElementById('login-screen').classList.add('hidden');
-  }
-})();
-
 </script>
 </body>
 </html>
