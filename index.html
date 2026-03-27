@@ -332,6 +332,38 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
   letter-spacing:.1em;cursor:pointer;margin-top:8px;transition:all var(--t)}
 .login-btn:hover{background:var(--accent2);box-shadow:var(--accent-g)}
 .login-err{color:var(--err);font-size:11px;text-align:center;margin-top:10px;min-height:16px;font-family:var(--mono)}
+/* ── Export dropdown ── */
+.exp-wrap{position:relative}
+.exp-menu{display:none;position:absolute;right:0;top:calc(100% + 4px);
+          background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);
+          min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:50;overflow:hidden}
+.exp-menu.open{display:block}
+.exp-menu button{display:block;width:100%;padding:9px 13px;background:transparent;border:none;
+                 color:var(--text2);font-family:var(--ui);font-size:11px;text-align:left;
+                 cursor:pointer;transition:all var(--t)}
+.exp-menu button:hover{background:var(--surface2);color:var(--accent)}
+
+/* ── Request/Response modal ── */
+.rr-modal{width:760px;max-width:95vw}
+.rr-tabs{display:flex;gap:2px;margin-bottom:12px}
+.rr-tab{padding:5px 14px;border-radius:var(--r);border:1px solid transparent;background:transparent;
+        color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all var(--t)}
+.rr-tab.act{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.rr-pane{display:none}
+.rr-pane.act{display:block}
+.xml-block{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+           padding:11px 13px;font-family:var(--mono);font-size:10px;line-height:1.7;
+           overflow-x:auto;white-space:pre;max-height:380px;overflow-y:auto;color:var(--text2)}
+.xml-block .xt{color:var(--accent2)}
+.xml-block .xa{color:var(--warn)}
+.xml-block .xv{color:var(--text)}
+.xml-block .xc{color:var(--text3)}
+.rr-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.rr-badge{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:3px;
+          border:1px solid var(--border2);background:var(--surface2);color:var(--text2)}
+.rr-badge.ok{color:var(--accent);border-color:var(--accent);background:var(--accent-d)}
+.rr-badge.err{color:var(--err);border-color:var(--err);background:var(--err-d)}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
@@ -461,8 +493,13 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
         <button class="rtab" onclick="tab('charts',this)">Gráficos</button>
       </div>
       <div class="exbtns">
-        <button class="bexp" id="bxlsx" onclick="doXLSX()" disabled>⬇ XLSX</button>
-        <button class="bexp" id="bcsv"  onclick="doCSV()"  disabled>⬇ CSV</button>
+        <div class="exp-wrap" id="exp-wrap">
+          <button class="bexp" id="bexp-main" onclick="toggleExpMenu()" disabled>⬇ Exportar ▾</button>
+          <div class="exp-menu" id="exp-menu">
+            <button onclick="doXLSX();toggleExpMenu()">📊 &nbsp;Excel (.xlsx)</button>
+            <button onclick="doCSV();toggleExpMenu()">📄 &nbsp;CSV (dois arquivos)</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="rcontent">
@@ -498,6 +535,7 @@ textarea.fi{resize:vertical;min-height:120px;line-height:1.55;font-size:10px}
               <th onclick="sortDetails('timestamp')">Data/Hora<span class="sort-ico">↕</span></th>
               <th onclick="sortDetails('duration')">Duração (ms)<span class="sort-ico">↕</span></th>
               <th onclick="sortDetails('success')">Status<span class="sort-ico">↕</span></th>
+              <th style="cursor:default">Req/Res</th>
             </tr></thead>
             <tbody id="dtbody"></tbody>
           </table>
@@ -835,10 +873,27 @@ function doExportJSON(){
 }
 
 /* ════════════════════════════════════════════════════════════════
+   DATA/HORA LOCAL
+════════════════════════════════════════════════════════════════ */
+function localISO(){
+  // Retorna "YYYY-MM-DDTHH:MM:SS" no fuso local do navegador
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T`+
+         `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function localDate(){
+  // Retorna "YYYYMMDD" no fuso local — usado para o contador
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+}
+
+/* ════════════════════════════════════════════════════════════════
    COUNTER  {CODIGO}{YYYYMMDD}{SEQ:003}
 ════════════════════════════════════════════════════════════════ */
 const CM = {
-  today(){ return new Date().toISOString().slice(0,10).replace(/-/g,''); },
+  today(){ return localDate(); },
   key(c) { return `cnt_${c.toUpperCase()}_${this.today()}`; },
   peek(c){ return parseInt(localStorage.getItem(this.key(c))||'0',10); },
   next(c){
@@ -969,7 +1024,7 @@ const Engine = {
         numAtendimento:num, numAtendimentoDB:null,
         duration:Date.now()-t0, success:false,
         errorDetail:e.message, isTimeout:false,
-        timestamp:new Date().toISOString(),
+        timestamp:localISO(),
       };
     }
   },
@@ -987,7 +1042,9 @@ const Engine = {
     if(!r.ok) throw new Error(`Proxy HTTP ${r.status}`);
     const d = await r.json();
 
-    const numDB = extractXmlTag(d.responseBody, profile.xmlTag||'diag:NumeroAtendimentoApoiado');
+    // Bug 3 fix: xmlTag comes from profile, never fall back to wrong default
+    const xmlTag = (profile.xmlTag||'').trim() || 'diag:NumeroAtendimentoApoiado';
+    const numDB = extractXmlTag(d.responseBody, xmlTag);
     return {
       seq, endpoint:profile.nome, versao:profile.versao||'',
       codigo:profile.codigo, color:profile.color||'#00e87a',
@@ -995,7 +1052,9 @@ const Engine = {
       duration:d.duration??(Date.now()-t0),
       success:d.success, statusCode:d.statusCode,
       errorDetail:d.errorDetail||null, isTimeout:d.isTimeout||false,
-      timestamp:new Date().toISOString(),
+      responseBody: d.responseBody||null,
+      requestPayload: payload,
+      timestamp:localISO(),
     };
   },
 
@@ -1021,7 +1080,9 @@ const Engine = {
       numAtendimento:num, numAtendimentoDB:numDB,
       duration:dur, success:ok, statusCode:r.status,
       errorDetail:err, isTimeout:false,
-      timestamp:new Date().toISOString(),
+      responseBody: body,
+      requestPayload: payload,
+      timestamp:localISO(),
     };
   },
 };
@@ -1077,15 +1138,30 @@ function buildCharts(){
     options:{...COPTS,scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>`${v}ms`}}}},
   });
 
-  // Histogram — usa cor do perfil de cada resultado
+  // Histogram — um dataset por endpoint, com a cor do perfil
   killChart('hg');
-  const all=res.map(r=>r.duration), mn=Math.min(...all), mx=Math.max(...all);
-  const bk=10, bs=(mx-mn)/bk||1, cnt=Array(bk).fill(0);
-  all.forEach(d=>cnt[Math.min(Math.floor((d-mn)/bs),bk-1)]++);
+  const hgDatasets = eps.map(ep => {
+    const durations = byEp[ep] || [];
+    if(!durations.length) return null;
+    const mn2=Math.min(...durations), mx2=Math.max(...durations);
+    const bk2=8, bs2=(mx2-mn2)/bk2||1;
+    const cnt2=Array(bk2).fill(0);
+    durations.forEach(d=>cnt2[Math.min(Math.floor((d-mn2)/bs2),bk2-1)]++);
+    const color2 = epColor(ep);
+    return {
+      label: ep,
+      data: cnt2,
+      backgroundColor: color2+'60',
+      borderColor: color2,
+      borderWidth: 1,
+      _labels: cnt2.map((_,i)=>`${Math.round(mn2+i*bs2)}ms`),
+    };
+  }).filter(Boolean);
+  // Use labels from first dataset
+  const hgLabels = hgDatasets[0]?._labels || [];
   S.charts.hg=new Chart(document.getElementById('chistogram').getContext('2d'),{
     type:'bar',
-    data:{labels:cnt.map((_,i)=>`${Math.round(mn+i*bs)}ms`),
-          datasets:[{label:'Frequência',data:cnt,backgroundColor:'#00e87a50',borderColor:'#00e87a',borderWidth:1}]},
+    data:{labels:hgLabels, datasets:hgDatasets.map(ds=>({...ds,_labels:undefined}))},
     options:{...COPTS,scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>`${v} req`}}}},
   });
 
@@ -1449,7 +1525,8 @@ function renderDetailTable(){
   const color = r => r.color || '#00e87a';
   document.getElementById('dtbody').innerHTML = rows.map(r => {
     const dc = r.duration>15000?'dc':r.duration>8000?'dw':'';
-    const ts = r.timestamp ? r.timestamp.replace('T',' ').slice(0,19) : '—';
+    const ts = r.timestamp ? r.timestamp.replace('T',' ') : '—';
+    const hasData = r.requestPayload || r.responseBody;
     return `<tr>
       <td>${r.seq}</td>
       <td style="color:${color(r)}">${esc(r.endpoint)}</td>
@@ -1459,6 +1536,8 @@ function renderDetailTable(){
       <td style="color:var(--text3);font-size:10px">${ts}</td>
       <td class="dh ${dc}">${fms(r.duration)}</td>
       <td class="${r.success?'dok':'derr'}">${r.success?'✓ OK':'✗ ERRO'}</td>
+      <td><button class="bico" title="Ver Request/Response" style="font-size:12px"
+          onclick="openRRModal(${r.seq})"${hasData?'':' disabled title="Sem dados (file://)"'}>🔍</button></td>
     </tr>`;
   }).join('');
 }
@@ -1469,8 +1548,7 @@ function renderDetailTable(){
 function renderResults(){
   const has = S.results.length > 0;
   document.getElementById('empty').style.display = has ? 'none' : 'flex';
-  document.getElementById('bxlsx').disabled = !has;
-  document.getElementById('bcsv').disabled  = !has;
+  setExportEnabled(has);
   if(!has) return;
 
   const stats = Stats.calc(S.results);
@@ -1723,5 +1801,142 @@ if(IS_FILE){
   document.getElementById('filebanner').style.display = 'block';
 }
 </script>
+<!-- MODAL: Request / Response -->
+<div class="mover" id="rr-modal">
+  <div class="modal rr-modal">
+    <div class="mhd">
+      <span class="mtit" id="rr-title">Request / Response</span>
+      <button class="mcls" onclick="closeRRModal()">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="rr-meta" id="rr-meta"></div>
+      <div class="rr-tabs">
+        <button class="rr-tab act" onclick="switchRRTab('req',this)">📤 Request (Payload)</button>
+        <button class="rr-tab" onclick="switchRRTab('res',this)">📥 Response (XML)</button>
+      </div>
+      <div class="rr-pane act" id="rr-pane-req">
+        <div class="xml-block" id="rr-req-body"></div>
+      </div>
+      <div class="rr-pane" id="rr-pane-res">
+        <div class="xml-block" id="rr-res-body"></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="copyRRContent()">⎘ Copiar</button>
+      <button class="btn pri" onclick="closeRRModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   EXPORT DROPDOWN
+════════════════════════════════════════════════════════════════ */
+function toggleExpMenu(){
+  document.getElementById('exp-menu').classList.toggle('open');
+}
+// Fecha o menu ao clicar fora
+document.addEventListener('click', e => {
+  if(!document.getElementById('exp-wrap')?.contains(e.target)){
+    document.getElementById('exp-menu')?.classList.remove('open');
+  }
+});
+function setExportEnabled(v){
+  document.getElementById('bexp-main').disabled = !v;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   REQUEST / RESPONSE MODAL
+════════════════════════════════════════════════════════════════ */
+let _rrActive = 'req';
+
+function openRRModal(seq){
+  const r = S.results.find(x => x.seq === seq);
+  if(!r) return;
+
+  document.getElementById('rr-title').textContent =
+    `#${r.seq} · ${r.endpoint}${r.versao?' '+r.versao:''} · ${r.numAtendimento}`;
+
+  // Meta badges
+  const okCls = r.success ? 'ok' : 'err';
+  document.getElementById('rr-meta').innerHTML =
+    `<span class="rr-badge ${okCls}">${r.success?'✓ SUCESSO':'✗ ERRO'}</span>`+
+    `<span class="rr-badge">${Math.round(r.duration)} ms</span>`+
+    `<span class="rr-badge">${r.timestamp||''}</span>`+
+    (r.numAtendimentoDB?`<span class="rr-badge ok">DB: ${esc(r.numAtendimentoDB)}</span>`:'')+
+    (r.errorDetail?`<span class="rr-badge err">${esc(r.errorDetail)}</span>`:'');
+
+  // Highlight and display
+  document.getElementById('rr-req-body').innerHTML = syntaxHighlightXML(r.requestPayload||'(sem payload gravado)');
+  document.getElementById('rr-res-body').innerHTML = syntaxHighlightXML(r.responseBody||'(sem resposta gravada)');
+
+  // Switch to req tab
+  switchRRTab('req', document.querySelector('.rr-tab'));
+  document.getElementById('rr-modal').classList.add('open');
+}
+
+function closeRRModal(){
+  document.getElementById('rr-modal').classList.remove('open');
+}
+document.getElementById('rr-modal').addEventListener('click', e => {
+  if(e.target === document.getElementById('rr-modal')) closeRRModal();
+});
+
+function switchRRTab(tab, btn){
+  _rrActive = tab;
+  document.querySelectorAll('.rr-tab').forEach(b => b.classList.remove('act'));
+  document.querySelectorAll('.rr-pane').forEach(p => p.classList.remove('act'));
+  if(btn) btn.classList.add('act');
+  document.getElementById(`rr-pane-${tab}`)?.classList.add('act');
+}
+
+function copyRRContent(){
+  const r = _rrActive === 'req'
+    ? document.getElementById('rr-req-body').textContent
+    : document.getElementById('rr-res-body').textContent;
+  navigator.clipboard?.writeText(r).then(()=>{ alert('Copiado!'); }).catch(()=>{ alert('Erro ao copiar.'); });
+}
+
+// Basic XML syntax highlighter (no external deps)
+function syntaxHighlightXML(raw){
+  if(!raw || typeof raw !== 'string') return esc(String(raw));
+  // Pretty-print first
+  const pretty = prettyXML(raw);
+  // Then colorize
+  return esc(pretty)
+    .replace(/(&lt;\/?)([\w:]+)/g, (_,a,b) => `<span class="xt">${a}${b}</span>`)
+    .replace(/([\w:]+)=(&quot;)/g, (_,a,b) => `<span class="xa">${a}</span>=${b}`)
+    .replace(/(&lt;!--[\s\S]*?--&gt;)/g, m => `<span class="xc">${m}</span>`);
+}
+
+function prettyXML(xml){
+  // Minimal pretty-printer: indent tags
+  try{
+    let out='', indent=0;
+    const re = /(<[^>]+>)|([^<]+)/g;
+    let m;
+    while((m=re.exec(xml))!==null){
+      if(m[1]){
+        const tag=m[1];
+        if(tag.startsWith('</')){
+          indent=Math.max(0,indent-1);
+          out+='\n'+'  '.repeat(indent)+tag;
+        } else if(tag.endsWith('/>')||tag.startsWith('<?')||tag.startsWith('<!')){
+          out+='\n'+'  '.repeat(indent)+tag;
+        } else {
+          out+='\n'+'  '.repeat(indent)+tag;
+          indent++;
+        }
+      } else if(m[2].trim()){
+        out+= m[2].trim();
+      }
+    }
+    return out.trim();
+  } catch{
+    return xml;
+  }
+}
+</script>
+
 </body>
 </html>
